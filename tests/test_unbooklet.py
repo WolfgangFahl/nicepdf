@@ -14,7 +14,7 @@ class TestPDFTool(Basetest):
     """
     test the PDF Tool
     """  
-    def setUp(self, debug=True, profile=True):
+    def setUp(self, debug=False, profile=True):
         Basetest.setUp(self, debug=debug, profile=profile)
         
     def create_booklet(self,double_pages:int = 2):

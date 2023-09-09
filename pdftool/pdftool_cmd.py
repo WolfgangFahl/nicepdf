@@ -239,7 +239,7 @@ class PdfFile:
     def create_example_booklet(self, double_pages=3):
         """Creates a dummy booklet pdf with the specified number of double pages."""
         writer = PdfFileWriter()
-        height,width=A4 # landscape A4
+        height,width=pagesizes.A4 # landscape A4
         
         double_pages=self.create_double_pages(double_pages)
 
