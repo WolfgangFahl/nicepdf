@@ -14,7 +14,7 @@ class Watermark:
     """
     
     @classmethod
-    def get_watermark(cls, page, message: str, rotation: int = 0, font: str = 'Helvetica', 
+    def get_watermark(cls, page, message: str, font: str = 'Helvetica', 
                       font_size: int = 18, color=colors.blue) -> PdfWriter:
         """
         Create a temporary PDF with the given message as a watermark.
@@ -31,9 +31,9 @@ class Watermark:
             PdfFileWriter: Temporary PDF with watermark.
         """
         
-        # Use the dimensions from the cropBox (the visible portion of the page).
-        page_width = float(page.cropBox.getWidth())
-        page_height = float(page.cropBox.getHeight())
+        # Use the dimensions from the cropbox (the visible portion of the page).
+        page_width = float(page.cropbox.width)
+        page_height = float(page.cropbox.height)
     
         packet = BytesIO()
         can = canvas.Canvas(packet, pagesize=(page_width, page_height))
@@ -58,18 +58,18 @@ class Watermark:
         new_pdf = PdfReader(packet)
     
         watermark = PdfWriter()
-        watermark.add_page(new_pdf.getPage(0))
+        watermark.add_page(new_pdf.pages[0])
         
         return watermark
 
     
     @classmethod
-    def get_watermarked_page(cls, page, message: str, rotation: int = 0):
-        watermark = cls.get_watermark(page,message, rotation)
+    def get_watermarked_page(cls, page, message: str):
+        watermark = cls.get_watermark(page,message)
         watermarked_page = copy(page)
             
         # Merge watermark onto the page
-        watermarked_page.merge_page(watermark.getPage(0))
+        watermarked_page.merge_page(watermark.pages[0])
             
         return watermarked_page
 
@@ -89,10 +89,7 @@ class HalfPage:
     
     def add_debug_info(self):
         debug_info=str(self)
-        rotation=0
-        if hasattr(self, "double_page"):
-            rotation=self.double_page.rotation
-        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info,rotation)      
+        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info)      
         return watermarked_page
 
 @dataclass
@@ -113,19 +110,19 @@ class DoublePage:
     
         # Create a rotated copy of the original page
         rotated_page = copy(page)
-        rotated_page.rotateCounterClockwise(rotation)
+        rotated_page.rotate(-rotation)
     
         # Split the rotated page
-        width = rotated_page.mediaBox.getWidth()
-        height = rotated_page.mediaBox.getHeight()
+        width = rotated_page.mediabox.width
+        height = rotated_page.mediabox.height
     
         left_half = copy(rotated_page)
-        left_half.cropBox.lowerLeft = (0, 0)
-        left_half.cropBox.upperRight = (width / 2, height)
+        left_half.cropbox.lower_left = (0, 0)
+        left_half.cropbox.upper_right = (width / 2, height)
     
         right_half = copy(rotated_page)
-        right_half.cropBox.lowerLeft = (width / 2, 0)
-        right_half.cropBox.upperRight = (width, height)
+        right_half.cropbox.lower_left = (width / 2, 0)
+        right_half.cropbox.upper_right = (width, height)
     
         # Calculate booklet page numbers
         if index % 2 == 0:  # even index (0-based)
@@ -164,7 +161,7 @@ class DoublePage:
     
     def add_debug_info(self):
         debug_info=str(self)
-        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info,self.rotation)      
+        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info)      
         return watermarked_page
 
 @dataclass
@@ -188,10 +185,10 @@ class PdfFile:
 
     def read_booklet(self):
         self.double_pages = []
-        double_page_count = self.reader.numPages
+        double_page_count = len(self.reader.pages)
 
         for i in range(double_page_count):
-            page = self.reader.getPage(i)
+            page = self.reader.pages[i]
             double_page = DoublePage.from_page(page, i, double_page_count * 2)
             self.double_pages.append(double_page)
 
@@ -248,7 +245,7 @@ class PdfFile:
 
         for double_page in double_pages:
             # Create an empty double page of 'A4 landscape' size
-            double_page.page = PageObject.createBlankPage(width=width, height=height)
+            double_page.page = PageObject.create_blank_page(width=width, height=height)
     
             # Left half of the page with debug info
             page_debug = double_page.add_debug_info()

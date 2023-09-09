@@ -5,8 +5,8 @@ Created on 2023-09-09
 '''
 import os
 import sys
-from PyPDF2 import PdfFileReader
-from pdftool.pdftool_cmd import PDFTool, DoublePage,HalfPage,PdfFile
+from PyPDF2 import PdfReader
+from pdftool.pdftool_cmd import PDFTool,PdfFile
 from tests.basetest import Basetest
 import webbrowser
 
@@ -45,8 +45,8 @@ class TestPDFTool(Basetest):
         
         # Validations
         with open(output_path, "rb") as output_file:
-            pdf = PdfFileReader(output_file)
-            self.assertEqual(pdf.numPages, expected_pages)  # 2 double pages yield 4 single pages
+            pdf = PdfReader(output_file)
+            self.assertEqual(len(pdf.pages), expected_pages)  # 2 double pages yield 4 single pages
 
     def test_double_pages(self):
         """
