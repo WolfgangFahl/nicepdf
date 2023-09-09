@@ -220,8 +220,9 @@ class PdfFile:
             page = self.reader.pages[i]
             double_page = DoublePage.from_page(page, i, double_page_count * 2)
             self.double_pages.append(double_page)
-            # Update the progress bar
-            progress_bar.update(1)
+            if progress_bar:
+                # Update the progress bar
+                progress_bar.update(1)
 
         return self.double_pages
         
