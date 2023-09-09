@@ -5,25 +5,25 @@ Created on 2023-09-09
 '''
 import os
 import sys
-import tempfile
-from PyPDF2 import PdfFileReader, PdfFileWriter, PageObject
-from pdftool.pdftool_cmd import PDFTool, PageInfo
+from PyPDF2 import PdfFileReader
+from pdftool.pdftool_cmd import PDFTool, DoublePage,HalfPage,PdfFile
 from tests.basetest import Basetest
-from reportlab.lib.pagesizes import A4
 import webbrowser
 
 class TestPDFTool(Basetest):
     """
     test the PDF Tool
-    """
-    
-    def setUp(self, debug=True, profile=True):
+    """  
+    def setUp(self, debug=False, profile=True):
         Basetest.setUp(self, debug=debug, profile=profile)
-        # Create temporary directories and files
-        self.tempdir = tempfile.TemporaryDirectory()
-        self.input_path = os.path.join(self.tempdir.name, "dummy_input.pdf")
-        self.output_path = os.path.join(self.tempdir.name, "dummy_output.pdf")
-
+        
+    def create_booklet(self,double_pages:int = 2):
+        booklet_pdf_path=f"/tmp/example_booklet_{double_pages}.pdf"
+        booklet_pdf=PdfFile(booklet_pdf_path)
+        booklet_pdf.create_example_booklet(double_pages)
+        self.show_debug(booklet_pdf_path)
+        return booklet_pdf
+        
     def show_debug(self,pdf_path:str):
         if self.debug:
             if sys.platform == "darwin":  # Darwin indicates macOS
@@ -33,94 +33,51 @@ class TestPDFTool(Basetest):
                 url = 'file://' + os.path.realpath(pdf_path)
                 webbrowser.open(url)
                 
-    def create_half_pages(self, double_pages:int) -> list:
-        """
-        create half pages in booklet style
-        """
-        page_objs = []
-        total_pages = double_pages * 2
-        for i in range(double_pages):
-            # Add debug info to this blank page
-            rotation = 90 if i % 2 == 1 else 0
-            # Page numbering logic for booklet format
-            if i == 0:
-                left_page_number = total_pages
-                right_page_number = 1
-            else:
-                left_page_number = i * 2
-                right_page_number = left_page_number + 1
-            page_objs.append(PageInfo(None, rotation, left_page_number))
-            page_objs.append(PageInfo(None, rotation, right_page_number))
-        return page_objs 
- 
             
-    def create_dummy_booklet_pdf(self, double_pages=3):
-        """Creates a dummy booklet pdf with the specified number of double pages."""
-        writer = PdfFileWriter()
-        # Instantiate the PDFTool just for watermarking
-        tool = PDFTool("", "")#
-        height,width=A4 # landscape A4
-        
-        half_pages=self.create_half_pages(double_pages)
-        
-
-        for i in range(0, len(half_pages), 2):  # Iterate through the list by 2 steps
-            # Create an empty double page of 'A4 landscape' size
-            page = PageObject.createBlankPage(width=width, height=height)
-    
-            # Left half of the page
-            left_page_info = half_pages[i]
-            left_page = PageObject.createBlankPage(width=width/2, height=height)
-            left_page = tool.add_debug_info(left_page, left_page_info.rotation, left_page_info.orig_index)
-            page.mergeTranslatedPage(left_page, 0, 0)
-    
-            # Right half of the page
-            right_page_info = half_pages[i+1]
-            right_page = PageObject.createBlankPage(width=width/2, height=height)
-            right_page = tool.add_debug_info(right_page, right_page_info.rotation, right_page_info.orig_index)
-            page.mergeTranslatedPage(right_page, width/2, 0)
-    
-            writer.add_page(page)
-        
-        with open(self.input_path, "wb") as outf:
-            writer.write(outf)
-                
-        self.show_debug(self.input_path)
-            
-    def check_split(self,expected_pages:int):
+    def check_split(self,pdf_file,expected_pages:int):
         # Creating an instance of the PDFTool class
-        pdf_tool = PDFTool(self.input_path, self.output_path, debug=self.debug)
+        output_path=pdf_file.filename.replace(".pdf","_out.pdf")
+        pdf_tool = PDFTool(pdf_file.filename, output_path, debug=self.debug)
 
         # Running the split function
         pdf_tool.split_booklet_style()
-        self.show_debug(self.output_path)
+        self.show_debug(output_path)
         
         # Validations
-        with open(self.output_path, "rb") as output_file:
+        with open(output_path, "rb") as output_file:
             pdf = PdfFileReader(output_file)
             self.assertEqual(pdf.numPages, expected_pages)  # 2 double pages yield 4 single pages
 
-    def test_half_pages(self):
+    def test_double_pages(self):
         """
-        test the half page creation code
+        test the double page /half_page creation code
         """
         expected=[4,1,2,3]
-        half_pages=self.create_half_pages(2)
+        double_pages=PdfFile.create_double_pages(2)
         if self.debug:
-            for half_page in half_pages:
-                print(half_page.orig_index)
-        for i,half_page in enumerate(half_pages):
-            self.assertEquals(expected[i],half_page.orig_index)
-                
+            for double_page in double_pages:
+                print(double_page.left.page_num)
+                print(double_page.right.page_num)
+        for i,double_page in enumerate(double_pages):
+            self.assertEquals(expected[2*i],double_page.left.page_num)
+            self.assertEquals(expected[2*i+1],double_page.right.page_num)
+                       
+    def test_read_booklet(self):
+        """
+        Test the extract_half_pages method.
+        """
+        pdf_file=self.create_booklet()
+        pdf_file.read_booklet()
+      
+        expected_indices = [4, 1, 2, 3]
+        for idx, double_page in enumerate(pdf_file.double_pages):
+            self.assertEquals(expected_indices[idx*2], double_page.left.page_num)
+            self.assertEquals(expected_indices[idx*2 + 1], double_page.right.page_num)
+      
     def test_split_booklet_style(self):
         """
         test even page booklet
         """
         for double_pages in range(2,4):
-            self.create_dummy_booklet_pdf(double_pages=double_pages)
-            self.check_split(double_pages*2)
-  
-    def tearDown(self):
-        # Clean up the temporary directory
-        self.tempdir.cleanup()
-
+            booklet=self.create_booklet(double_pages)
+            self.check_split(booklet,double_pages*2)

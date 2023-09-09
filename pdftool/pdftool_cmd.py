@@ -1,4 +1,4 @@
-from PyPDF2 import PdfFileReader, PdfFileWriter
+from PyPDF2 import PdfFileReader, PdfFileWriter, PageObject
 from tqdm import tqdm
 from copy import copy
 from dataclasses import dataclass
@@ -6,41 +6,14 @@ import argparse
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from io import BytesIO
+import os
 
-@dataclass
-class PageInfo:
-    page: object  # The actual page from PdfFileReader
-    rotation: int
-    orig_index: int
-
-class PDFTool:
+class Watermark:
     """
-    A class to work on PDFs
-    
-    Functions:
-        convert booklet-style PDF to plain PDF
-    
-    Attributes:
-        input_file (str): The path to the input PDF file.
-        output_file (str): The path to the output split PDF file.
+    a PDF Watermark
     """
     
-    def __init__(self, input_file: str, output_file: str, debug: bool = False, args: argparse.Namespace = None) -> None:
-        """
-        Initializes the PDFTool with input and output file paths and optional debugging.
-        
-        Args:
-            input_file (str): Path to the input PDF file.
-            output_file (str): Path to the output PDF file.
-            debug (bool): Whether to enable debugging watermarks. Default is False.
-            args (argparse.Namespace): The parsed command-line arguments.
-        """
-        self.input_file = input_file
-        self.output_file = output_file
-        self.debug = debug
-        self.args = args
-        
-    @classmethod    
+    @classmethod
     def get_watermark(cls, message: str) -> PdfFileWriter:
         """
         Create a temporary PDF with the given message as a watermark.
@@ -70,115 +43,242 @@ class PDFTool:
         
         return watermark
     
-    def add_debug_info(self, page, rotation, orig_page_num) -> PdfFileWriter:
-        """
-        Add debugging watermark to the provided page.
-        
-        Args:
-            page (PdfFileWriter): The PDF page to watermark.
-            rotation (int): Rotation angle of the page.
-            orig_page_num (int): Original page number from the input.
-            
-        Returns:
-            PdfFileWriter: Watermarked PDF page.
-        """
-        
-        watermark = self.get_watermark(f"Rotation: {rotation}, Page: {orig_page_num}")
+    @classmethod
+    def get_watermarked_page(cls,page,message:str):
+        watermark = cls.get_watermark(message)
         watermarked_page = copy(page)
-        
+            
         # Merge watermark onto the page
         watermarked_page.merge_page(watermark.getPage(0))
-        
+            
         return watermarked_page
 
-    def split_page(self, page):
-        """
-        Split the page into left and right halves taking into account any page rotations.
+@dataclass
+class HalfPage:
+    """
+    a half page in a booklet
+    """
+    page_num: int # index starting from one
+    page: object  # The extracted page 
     
-        Args:
-            page: The PDF page to split.
+    def __str__(self):
+        text=f"Halfpage {self.page_num}"
+        if hasattr(self, "double_page"):
+            text=f"{text} {str(self.double_page)}"
+        return text
     
-        Returns:
-            Tuple[PDF page, PDF page]: Left and right halves.
-        """
-        # Extract the dimensions of the page
+    def add_debug_info(self):
+        debug_info=str(self)
+        #watermarked_page=Watermark.get_watermarked_page(self.page, debug_info)      
+        return self.page
+
+@dataclass
+class DoublePage:
+    """
+    a double page containing two half pages
+    """
+    page: object  # The actual page from PdfFileReader
+    rotation: int # e.g. 0,90,180,270
+    left: HalfPage
+    right: HalfPage
+    page_index: int # counting from 0
+
+    @classmethod
+    def from_page(cls, page, index, total_pages):
         width = page.mediaBox.getWidth()
-        height = page.mediaBox.getHeight()
     
-        # Adjust for rotated pages
-        rotation = page.get('/Rotate')
-        if rotation in (90, 270):
-            width, height = height, width
-    
-        # Left half
+        # Split the A4 page into two A5 halves (left and right).
         left_half = copy(page)
-        left_half.mediaBox.upperRight = (width / 2, height)
-        left_half.mediaBox.lowerLeft = (0, 0)
+        left_half.mediaBox.upperRight = (width / 2, A4[1])
     
-        # Adjust rotation if needed
-        if rotation:
-            left_half.rotateClockwise(rotation)
-    
-        # Right half
         right_half = copy(page)
         right_half.mediaBox.lowerLeft = (width / 2, 0)
-        right_half.mediaBox.upperRight = (width, height)
     
-        # Adjust rotation if needed
-        if rotation:
-            right_half.rotateClockwise(rotation)
-                 
-        return left_half, right_half
+        # Calculate the correct booklet page numbers.
+        if index % 2 == 0:  # even index (0-based)
+            left_num = total_pages - index
+            right_num = index + 1
+        else:
+            left_num = index + 1
+            right_num = total_pages - index
+    
+        # Create HalfPage instances for each half.
+        left = HalfPage(page_num=left_num, page=left_half)
+        right = HalfPage(page_num=right_num, page=right_half)
+    
+        # Return a DoublePage instance.
+        return cls(page=page, rotation=page.get('/Rotate', 0), 
+                   left=left, right=right, page_index=index)
 
-    def gather_pages(self) -> list[PageInfo]:
-        """
-        Gather pages from the booklet in the order they should be processed.
-        """
-        num_pages = len(self.reader.pages)
-        pages = []
-
-        # Handle first scanned page
-        right_page, left_page = self.split_page(self.reader.pages[0])
-        pages.append(PageInfo(right_page, right_page.get('/Rotate', 0), 0))
-        pages.append(PageInfo(left_page, left_page.get('/Rotate', 0), num_pages - 1))
         
-        for idx in range(1, num_pages):
-            # Process right side from the front part of the booklet
-            page = self.reader.pages[idx]
-            _, right_page = self.split_page(page)
-            pages.append(PageInfo(right_page, page.get('/Rotate', 0), idx))
+    def rotation_symbol(self)->str:
+        rotation=self.rotation
+        # Use Unicode symbols for rotation
+        if rotation == 0:
+            rotation_symbol = "↕   0"
+        elif rotation == 90:
+            rotation_symbol = "→  90"
+        elif rotation == 180:
+            rotation_symbol = "↔ 180"
+        elif rotation == 270:
+            rotation_symbol = "← 270"
+        else:
+            rotation_symbol = ""
+        return rotation_symbol
+    
+    def __str__(self):
+        text=f"Page {self.page_index}: {self.left.page_num}-{self.right.page_num} {self.rotation_symbol()}"
+        return text
+    
+    def add_debug_info(self):
+        debug_info=str(self)
+        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info)      
+        return watermarked_page
 
-            # Process left side from the back part of the booklet
-            page = self.reader.pages[num_pages - idx]
-            left_page, _ = self.split_page(page)
-            pages.append(PageInfo(left_page, page.get('/Rotate', 0), num_pages - idx))
+@dataclass
+class PdfFile:
+    """
+    a pdf file
+    """
+    filename: str
+    reader: PdfFileReader = None
+    double_pages: list = None
+    pages: dict = None
     
-        return pages
+    def __post_init__(self):
+        if os.path.exists(self.filename):
+            self.file_obj = open(self.filename, "rb")
+            self.reader = PdfFileReader(self.file_obj)
+        
+    def close(self):
+        if self.file_obj:
+            self.file_obj.close()
+
+    def read_booklet(self):
+        self.double_pages = []
+        double_page_count = self.reader.numPages
+
+        for i in range(double_page_count):
+            page = self.reader.getPage(i)
+            double_page = DoublePage.from_page(page, i, double_page_count * 2)
+            self.double_pages.append(double_page)
+
+        return self.double_pages
+        
+    def add_half_page(self,double_page:DoublePage,half_page:HalfPage):
+        half_page.double_page=double_page
+        idx=half_page.page_num-1
+        self.pages[idx]=half_page
+        
+    def un_booklet(self)->list:
+        """
+        convert my double pages to single pages by returning
+        my half pages in proper order
+        """
+        # Convert double pages to single pages by extracting half pages in proper order.
+        self.pages = {}
+        for dp in self.double_pages:
+            self.add_half_page(dp,dp.left)
+            self.add_half_page(dp,dp.right)
+        return self.pages
+        
+    @classmethod
+    def create_double_pages(self, double_pages: int) -> list:
+        """
+        create double pages in booklet style
+        """
+        total_pages = double_pages * 2
+        double_page_list = []
+
+        for i in range(double_pages):
+            rotation = 90 if i % 2 == 1 else 0
+
+            if i == 0:
+                left_page = HalfPage(page_num=total_pages, page=None)
+                right_page = HalfPage(page_num=1, page=None)
+            else:
+                left_page = HalfPage(page_num=i * 2, page=None)
+                right_page = HalfPage(page_num=(i * 2) + 1, page=None)
+
+            double_page = DoublePage(page=None, rotation=rotation, 
+                                     left=left_page, right=right_page, 
+                                     page_index=i)
+            double_page_list.append(double_page)
+
+        return double_page_list
+        
+    def create_example_booklet(self, double_pages=3):
+        """Creates a dummy booklet pdf with the specified number of double pages."""
+        writer = PdfFileWriter()
+        height,width=A4 # landscape A4
+        
+        double_pages=self.create_double_pages(double_pages)
+
+        for double_page in double_pages:
+            # Create an empty double page of 'A4 landscape' size
+            double_page.page = PageObject.createBlankPage(width=width, height=height)
     
+            # Left half of the page with debug info
+            page_debug = double_page.add_debug_info()
+            writer.add_page(page_debug)
+        
+        with open(self.filename, "wb") as output_file:
+            writer.write(output_file)
+
+class PDFTool:
+    """
+    A class to work on PDFs
+    
+    Functions:
+        convert booklet-style PDF to plain PDF
+    
+    Attributes:
+        input_file (str): The path to the input PDF file.
+        output_file (str): The path to the output split PDF file.
+    """
+    
+    def __init__(self, input_file: str, output_file: str, debug: bool = False) -> None:
+        """
+        Initializes the PDFTool with input and output file paths and optional debugging.
+        
+        Args:
+            input_file (str): Path to the input PDF file.
+            output_file (str): Path to the output PDF file.
+            debug (bool): Whether to enable debugging watermarks. Default is False.
+        """
+        self.input_file = PdfFile(input_file)
+        self.output_file = PdfFile(output_file)
+        self.debug = debug
+        self.args = None
+        self.verbose=False
+        
     def split_booklet_style(self) -> None:
         """
         Split a booklet-style PDF into individual pages.
         """
-        if self.debug:
-            print(f"processing {self.input_file} ...")
-        with open(self.input_file, "rb") as file:
-            self.reader = PdfFileReader(file)
-            self.writer = PdfFileWriter()
+        if self.verbose:
+            print(f"Processing {self.input_file.filename} ...")
+    
+        self.input_file.read_booklet()
+        self.input_file.un_booklet()
+    
+        writer=PdfFileWriter()
 
-            pages = self.gather_pages()
-            
-            for page_info in pages:
-                if self.debug:
-                    page = self.add_debug_info(page_info.page, page_info.rotation, page_info.orig_index)
-                    self.writer.add_page(page)
-                else:
-                    self.writer.add_page(page_info.page)
-        
+        for half_page in tqdm(self.input_file.pages.values(), desc="Processing pages", unit="page"):
             if self.debug:
-                print(f"output at {self.output_file}")
-            with open(self.output_file, "wb") as output_file:
-                self.writer.write(output_file)
-                
+                page = half_page.add_debug_info()  
+                writer.add_page(page)
+            else:
+                writer.add_page(half_page.page)
+    
+        if self.verbose:
+            print(f"\nOutput at {self.output_file.filename}")
+    
+        with open(self.output_file.filename, "wb") as output_file:
+            writer.write(output_file)
+            
+        self.input_file.close()
+            
     @classmethod
     def get_parser(cls):
         """
@@ -188,6 +288,7 @@ class PDFTool:
         parser.add_argument("input_file", type=str, help="Path to the input PDF file.")
         parser.add_argument("output_file", type=str, help="Path to the output PDF file.")
         parser.add_argument("-d","--debug", action="store_true", help="Enable debugging watermarks.")
+        parser.add_argument("-v","--verbose", action="store_true", help="Give verbose output.")
         return parser
     
     @classmethod
@@ -197,7 +298,9 @@ class PDFTool:
         """
         parser = cls.get_parser()
         args = parser.parse_args()
-        return cls(args.input_file, args.output_file, args.debug, args)
+        tool=cls(args.input_file, args.output_file, args.debug)
+        tool.args=args
+        return tool
 
 def main():
     """
