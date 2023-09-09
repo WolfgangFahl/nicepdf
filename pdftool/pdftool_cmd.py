@@ -186,9 +186,11 @@ class PdfFile:
         self.open()
     
     def open(self):
-        if os.path.exists(self.filename):
+        if self.filename and os.path.exists(self.filename):
             self.file_obj = open(self.filename, "rb")
             self.reader = PdfReader(self.file_obj)
+        else:
+            self.file_obj=None
         
     def close(self):
         if self.file_obj:
