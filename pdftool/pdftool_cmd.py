@@ -86,14 +86,17 @@ class DoublePage:
     @classmethod
     def from_page(cls, page, index, total_pages):
         width = page.mediaBox.getWidth()
+        height = page.mediaBox.getHeight()  # Calculating height only once
     
         # Split the A4 page into two A5 halves (left and right).
         left_half = copy(page)
-        left_half.mediaBox.upperRight = (width / 2, A4[1])
+        left_half.cropBox.lowerLeft = (0, 0)
+        left_half.cropBox.upperRight = (width / 2, height)
     
         right_half = copy(page)
-        right_half.mediaBox.lowerLeft = (width / 2, 0)
-    
+        right_half.cropBox.lowerLeft = (width / 2, 0)
+        right_half.cropBox.upperRight = (width, height)
+        
         # Calculate the correct booklet page numbers.
         if index % 2 == 0:  # even index (0-based)
             left_num = total_pages - index
@@ -167,7 +170,7 @@ class PdfFile:
         
     def add_half_page(self,double_page:DoublePage,half_page:HalfPage):
         half_page.double_page=double_page
-        idx=half_page.page_num-1
+        idx=half_page.page_num
         self.pages[idx]=half_page
         
     def un_booklet(self)->list:
@@ -193,12 +196,12 @@ class PdfFile:
         for i in range(double_pages):
             rotation = 90 if i % 2 == 1 else 0
 
-            if i == 0:
-                left_page = HalfPage(page_num=total_pages, page=None)
-                right_page = HalfPage(page_num=1, page=None)
+            if i % 2 == 0:
+                left_page = HalfPage(page_num=total_pages - i, page=None)
+                right_page = HalfPage(page_num=i + 1, page=None)
             else:
-                left_page = HalfPage(page_num=i * 2, page=None)
-                right_page = HalfPage(page_num=(i * 2) + 1, page=None)
+                left_page = HalfPage(page_num=i + 1, page=None)
+                right_page = HalfPage(page_num=total_pages - i, page=None)
 
             double_page = DoublePage(page=None, rotation=rotation, 
                                      left=left_page, right=right_page, 
@@ -264,7 +267,9 @@ class PDFTool:
     
         writer=PdfFileWriter()
 
-        for half_page in tqdm(self.input_file.pages.values(), desc="Processing pages", unit="page"):
+        page_nums=sorted(list(self.input_file.pages.keys()))
+        for page_num in tqdm(page_nums, desc="Processing pages", unit="page"):
+            half_page=self.input_file.pages[page_num]
             if self.debug:
                 page = half_page.add_debug_info()  
                 writer.add_page(page)

@@ -14,7 +14,7 @@ class TestPDFTool(Basetest):
     """
     test the PDF Tool
     """  
-    def setUp(self, debug=False, profile=True):
+    def setUp(self, debug=True, profile=True):
         Basetest.setUp(self, debug=debug, profile=profile)
         
     def create_booklet(self,double_pages:int = 2):
@@ -52,16 +52,21 @@ class TestPDFTool(Basetest):
         """
         test the double page /half_page creation code
         """
-        expected=[4,1,2,3]
-        double_pages=PdfFile.create_double_pages(2)
-        if self.debug:
-            for double_page in double_pages:
-                print(double_page.left.page_num)
-                print(double_page.right.page_num)
-        for i,double_page in enumerate(double_pages):
-            self.assertEquals(expected[2*i],double_page.left.page_num)
-            self.assertEquals(expected[2*i+1],double_page.right.page_num)
-                       
+        test_cases=[
+            (4,[4,1,2,3]),
+            (100,[100,1,2,99,98,3,4,97])
+        ]
+        for pages,expected in test_cases:
+            double_pages=PdfFile.create_double_pages(pages//2)
+            if self.debug:
+                for double_page in double_pages:
+                    print(double_page.left.page_num)
+                    print(double_page.right.page_num)
+            for i,double_page in enumerate(double_pages):
+                if 2*i+1<len(expected):
+                    self.assertEquals(expected[2*i],double_page.left.page_num)
+                    self.assertEquals(expected[2*i+1],double_page.right.page_num)
+                           
     def test_read_booklet(self):
         """
         Test the extract_half_pages method.
