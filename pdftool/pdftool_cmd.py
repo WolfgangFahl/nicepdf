@@ -1,4 +1,4 @@
-from PyPDF2 import PdfFileReader, PdfFileWriter, PageObject
+from PyPDF2 import PdfReader, PdfWriter, PageObject
 from tqdm import tqdm
 from copy import copy
 from dataclasses import dataclass
@@ -15,7 +15,7 @@ class Watermark:
     
     @classmethod
     def get_watermark(cls, page, message: str, rotation: int = 0, font: str = 'Helvetica', 
-                      font_size: int = 18, color=colors.blue) -> PdfFileWriter:
+                      font_size: int = 18, color=colors.blue) -> PdfWriter:
         """
         Create a temporary PDF with the given message as a watermark.
         
@@ -55,9 +55,9 @@ class Watermark:
         can.save()
     
         packet.seek(0)
-        new_pdf = PdfFileReader(packet)
+        new_pdf = PdfReader(packet)
     
-        watermark = PdfFileWriter()
+        watermark = PdfWriter()
         watermark.add_page(new_pdf.getPage(0))
         
         return watermark
@@ -173,14 +173,14 @@ class PdfFile:
     a pdf file
     """
     filename: str
-    reader: PdfFileReader = None
+    reader: PdfReader = None
     double_pages: list = None
     pages: dict = None
     
     def __post_init__(self):
         if os.path.exists(self.filename):
             self.file_obj = open(self.filename, "rb")
-            self.reader = PdfFileReader(self.file_obj)
+            self.reader = PdfReader(self.file_obj)
         
     def close(self):
         if self.file_obj:
@@ -241,7 +241,7 @@ class PdfFile:
         
     def create_example_booklet(self, double_pages=3):
         """Creates a dummy booklet pdf with the specified number of double pages."""
-        writer = PdfFileWriter()
+        writer = PdfWriter()
         height,width=pagesizes.A4 # landscape A4
         
         double_pages=self.create_double_pages(double_pages)
@@ -294,7 +294,7 @@ class PDFTool:
         self.input_file.read_booklet()
         self.input_file.un_booklet()
     
-        writer=PdfFileWriter()
+        writer=PdfWriter()
 
         page_nums=sorted(list(self.input_file.pages.keys()))
         for page_num in tqdm(page_nums, desc="Processing pages", unit="page"):
