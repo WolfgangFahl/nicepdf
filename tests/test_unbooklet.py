@@ -24,6 +24,7 @@ class TestPDFTool(Basetest):
         booklet_pdf_path=f"/tmp/example_booklet_{double_pages}.pdf"
         booklet_pdf=PdfFile(booklet_pdf_path)
         booklet_pdf.create_example_booklet(double_pages)
+        booklet_pdf.open()
         self.show_debug(booklet_pdf_path)
         return booklet_pdf
         
