@@ -130,14 +130,14 @@ class DoublePage:
         rotation = page.get('/Rotate', 0)
         width = page.mediabox.width
         height = page.mediabox.height
-        a4_width, a4_height = pagesizes.A4  # Landscape A4
+        a4_height, a4_width = pagesizes.A4  # Landscape A4
         writer = PdfWriter()
         rotated_page = cls.copy_page(writer=writer,page=page,width=a4_width, height=a4_height,tx=0,ty=0)
         
         # Create two new blank pages with half the width of the original
     
-        left_half = cls.copy_page(writer=writer,page=rotated_page,width=width/2, height=height,tx=0,ty=0)
-        right_half = cls.copy_page(writer=writer,page=rotated_page,width=width/2, height=height,tx=-width/2, ty=0)
+        left_half = cls.copy_page(writer=writer,page=rotated_page,width=a4_width/2, height=a4_height,tx=0,ty=0)
+        right_half = cls.copy_page(writer=writer,page=rotated_page,width=a4_width/2, height=a4_height,tx=-a4_width/2, ty=0)
     
         # Calculate booklet page numbers
         if index % 2 == 0:  # even index (0-based)
@@ -359,7 +359,7 @@ class PDFTool:
         if self.verbose:
             print(f"Processing {self.input_file.filename} ...")
         total_iterations=3*len(self.input_file.reader.pages)
-        self.progress_bar = tqdm(total=total_iterations, desc="Processing all pages", unit="page")
+        self.progress_bar = tqdm(total=total_iterations, desc="Processing all pages", unit="step")
 
         self.input_file.read_booklet(self.progress_bar)
         # Change the description
