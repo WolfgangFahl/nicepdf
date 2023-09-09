@@ -23,22 +23,22 @@ class Watermark:
                       font_size: int = 18, color=colors.blue) -> PdfWriter:
         """
         Create a temporary PDF with the given message as a watermark.
-        
+    
         Args:
-            page (object): Page object to get the dimensions for watermark.
+            page (object): Page object to get the dimensions and rotation for watermark.
             message (str): Message to display as watermark.
-            rotation (int): Rotation degree of the watermark text.
             font (str): Font for the watermark text. Default is 'Helvetica'.
             font_size (int): Font size for the watermark text. Default is 18.
             color: Color for the watermark text. Default is blue.
-            
+    
         Returns:
-            PdfFileWriter: Temporary PDF with watermark.
+            PdfWriter: Temporary PDF with watermark.
         """
         
         # Use the dimensions from the cropbox (the visible portion of the page).
         page_width = float(page.cropbox.width)
         page_height = float(page.cropbox.height)
+        rotation = page.get('/Rotate', 0)  # Fetching the rotation from the page
     
         packet = BytesIO()
         can = canvas.Canvas(packet, pagesize=(page_width, page_height))
@@ -50,11 +50,13 @@ class Watermark:
         y = (page_height - text_height) / 2  # Adjusted y calculation
     
         can.saveState()  # Save the current state
-    
+        
         # Setting fill color and font details
         can.setFillColor(color)
         can.setFont(font, font_size)
-        can.drawString(x, y, message)
+        can.translate(x + text_width / 2, y + text_height / 2)  # Move the origin to the center of the text
+        can.rotate(rotation)  # Rotate the canvas by the rotation of the page
+        can.drawString(-text_width / 2, -text_height / 2, message)  # Draw the string at the rotated origin
     
         can.restoreState()  # Restore to the previous state
         can.save()
@@ -351,6 +353,7 @@ class PDFTool:
         args = parser.parse_args()
         tool=cls(args.input, args.output, args.debug)
         tool.args=args
+        tool.verbose=args.verbose
         return tool
 
 def main(argv=None): 
