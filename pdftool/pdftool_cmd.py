@@ -117,6 +117,8 @@ class DoublePage:
         # Get the rotation of the original page
         rotation = page.get('/Rotate', 0)
         rotated_page=copy(page)
+        if rotation!=0:
+            rotated_page.rotate(-rotation)
         rotated_page.add_transformation(Transformation().translate(tx, ty))
         
         new_page.merge_page(rotated_page)
@@ -204,17 +206,22 @@ class PdfFile:
         if self.file_obj:
             self.file_obj.close()
 
-    def read_booklet(self):
+    def read_booklet(self,progress_bar=None):
         """
         read min input as a booklet
         """
         self.double_pages = []
         double_page_count = len(self.reader.pages)
-
+        if progress_bar:
+            # Change the description of the progress bar
+            progress_bar.set_description("Splitting pages")
+        
         for i in range(double_page_count):
             page = self.reader.pages[i]
             double_page = DoublePage.from_page(page, i, double_page_count * 2)
             self.double_pages.append(double_page)
+            # Update the progress bar
+            progress_bar.update(1)
 
         return self.double_pages
         
@@ -350,20 +357,27 @@ class PDFTool:
         """
         if self.verbose:
             print(f"Processing {self.input_file.filename} ...")
-    
-        self.input_file.read_booklet()
+        total_iterations=3*len(self.input_file.reader.pages)
+        self.progress_bar = tqdm(total=total_iterations, desc="Processing all pages", unit="page")
+
+        self.input_file.read_booklet(self.progress_bar)
+        # Change the description
+        self.progress_bar.set_description("reordering pages")
         self.input_file.un_booklet()
     
         writer=PdfWriter()
 
         page_nums=sorted(list(self.input_file.pages.keys()))
-        for page_num in tqdm(page_nums, desc="Processing pages", unit="page"):
+        self.progress_bar.set_description("writing pages")
+        for page_num in page_nums:
             half_page=self.input_file.pages[page_num]
             if self.debug:
                 page = half_page.add_debug_info()  
                 writer.add_page(page)
             else:
                 writer.add_page(half_page.page)
+            # Update the progress bar
+            self.progress_bar.update(1)
     
         if self.verbose:
             print(f"\nOutput at {self.output_file.filename}")
