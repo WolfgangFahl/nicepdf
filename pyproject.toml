@@ -15,7 +15,8 @@ license= "Apache-2.0"
 dependencies = [
     "PyPDF2>=1.26.0",
     "tqdm>=4.60.0",
-    "reportlab>=3.5.67"
+    "reportlab>=3.5.67",
+    "nicegui"
 ]
 
 requires-python = ">=3.8"
