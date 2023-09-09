@@ -54,5 +54,5 @@ only-include = ["pdftool"]
 "pdftool" = "pdftool"
 
 [project.scripts]
-pdftool = "pdftool.pdf_unbooklet:main"
+pdftool = "pdftool.pdftool_cmd:main"
 
