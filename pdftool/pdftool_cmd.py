@@ -14,12 +14,13 @@ class Watermark:
     """
     
     @classmethod
-    def get_watermark(cls, message: str, rotation: int = 0, font: str = 'Helvetica', 
+    def get_watermark(cls, page, message: str, rotation: int = 0, font: str = 'Helvetica', 
                       font_size: int = 18, color=colors.blue) -> PdfFileWriter:
         """
         Create a temporary PDF with the given message as a watermark.
         
         Args:
+            page (object): Page object to get the dimensions for watermark.
             message (str): Message to display as watermark.
             rotation (int): Rotation degree of the watermark text.
             font (str): Font for the watermark text. Default is 'Helvetica'.
@@ -29,26 +30,22 @@ class Watermark:
         Returns:
             PdfFileWriter: Temporary PDF with watermark.
         """
-        packet = BytesIO()
-        can = canvas.Canvas(packet, pagesize=pagesizes.A4)  # Use A4 pagesize
+        
+        # Use the dimensions from the cropBox (the visible portion of the page).
+        page_width = float(page.cropBox.getWidth())
+        page_height = float(page.cropBox.getHeight())
     
-        # Extracting A4 dimensions to variables
-        a4_width, a4_height = pagesizes.A4
+        packet = BytesIO()
+        can = canvas.Canvas(packet, pagesize=(page_width, page_height))
     
         text_width = can.stringWidth(message, font, font_size)
-        text_height = font_size  # assuming font_size corresponds to height
+        text_height = font_size  # Assuming font_size roughly corresponds to height
         
-        x = (a4_width - text_width) / 2
-        y = (a4_height + text_height) / 2
+        x = (page_width - text_width) / 2
+        y = (page_height - text_height) / 2  # Adjusted y calculation
     
         can.saveState()  # Save the current state
     
-        # Adjusting for rotation
-        if rotation:
-            can.translate(a4_width / 2, a4_height / 2)  # Move to the center
-            can.rotate(rotation)  # Rotate
-            can.translate(-a4_width / 2, -a4_height / 2)  # Move back to the origin
-        
         # Setting fill color and font details
         can.setFillColor(color)
         can.setFont(font, font_size)
@@ -68,7 +65,7 @@ class Watermark:
     
     @classmethod
     def get_watermarked_page(cls, page, message: str, rotation: int = 0):
-        watermark = cls.get_watermark(message, rotation)
+        watermark = cls.get_watermark(page,message, rotation)
         watermarked_page = copy(page)
             
         # Merge watermark onto the page
