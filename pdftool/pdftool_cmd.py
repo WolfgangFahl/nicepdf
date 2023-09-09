@@ -4,7 +4,7 @@ from copy import copy
 from dataclasses import dataclass
 import argparse
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors, pagesizes
 from io import BytesIO
 import os
 
@@ -14,33 +14,44 @@ class Watermark:
     """
     
     @classmethod
-    def get_watermark(cls, message: str, rotation: int = 0) -> PdfFileWriter:
+    def get_watermark(cls, message: str, rotation: int = 0, font: str = 'Helvetica', 
+                      font_size: int = 18, color=colors.blue) -> PdfFileWriter:
         """
         Create a temporary PDF with the given message as a watermark.
+        
         Args:
             message (str): Message to display as watermark.
             rotation (int): Rotation degree of the watermark text.
+            font (str): Font for the watermark text. Default is 'Helvetica'.
+            font_size (int): Font size for the watermark text. Default is 18.
+            color: Color for the watermark text. Default is blue.
+            
         Returns:
             PdfFileWriter: Temporary PDF with watermark.
         """
         packet = BytesIO()
-        can = canvas.Canvas(packet, pagesize=A4)  # Use A4 pagesize
+        can = canvas.Canvas(packet, pagesize=pagesizes.A4)  # Use A4 pagesize
+    
+        # Extracting A4 dimensions to variables
+        a4_width, a4_height = pagesizes.A4
+    
+        text_width = can.stringWidth(message, font, font_size)
+        text_height = font_size  # assuming font_size corresponds to height
         
-        text_width = can.stringWidth(message, 'Helvetica', 18)
-        text_height = 18  # size of the font
-        
-        x = (A4[0] - text_width) / 2
-        y = (A4[1] + text_height) / 2
+        x = (a4_width - text_width) / 2
+        y = (a4_height + text_height) / 2
     
         can.saveState()  # Save the current state
     
         # Adjusting for rotation
         if rotation:
-            can.translate(A4[0] / 2, A4[1] / 2)  # Move to the center
+            can.translate(a4_width / 2, a4_height / 2)  # Move to the center
             can.rotate(rotation)  # Rotate
-            can.translate(-A4[0] / 2, -A4[1] / 2)  # Move back to the origin
+            can.translate(-a4_width / 2, -a4_height / 2)  # Move back to the origin
         
-        can.setFont('Helvetica', 18)
+        # Setting fill color and font details
+        can.setFillColor(color)
+        can.setFont(font, font_size)
         can.drawString(x, y, message)
     
         can.restoreState()  # Restore to the previous state
@@ -81,7 +92,10 @@ class HalfPage:
     
     def add_debug_info(self):
         debug_info=str(self)
-        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info)      
+        rotation=0
+        if hasattr(self, "double_page"):
+            rotation=self.double_page.rotation
+        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info,rotation)      
         return watermarked_page
 
 @dataclass
