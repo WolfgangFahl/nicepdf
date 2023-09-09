@@ -125,8 +125,8 @@ class DoublePage:
         
         # Create two new blank pages with half the width of the original
         pdf_writer = PdfWriter()
-        left_half = pdf_writer.add_blank_page(width=width, height=height)
-        right_half = pdf_writer.add_blank_page(width=width, height=height)
+        left_half = pdf_writer.add_blank_page(width=width/2, height=height)
+        right_half = pdf_writer.add_blank_page(width=width/2, height=height)
     
         # Render the content of the original page onto each new half page
         # For the left half
