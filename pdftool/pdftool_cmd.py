@@ -9,6 +9,7 @@ from io import BytesIO
 from pdftool.version import Version
 from pdftool.webserver import WebServer
 import os
+import random
 import sys
 import webbrowser
 import traceback
@@ -114,11 +115,9 @@ class DoublePage:
     def from_page(cls, page, index, total_pages):
         # Get the rotation of the original page
         rotation = page.get('/Rotate', 0)
-    
-        # Create a rotated copy of the original page
-        rotated_page = copy(page)
+        rotated_page=copy(page)
+        # undo rotation
         rotated_page.rotate(-rotation)
-    
         # Split the rotated page
         width = rotated_page.mediabox.width
         height = rotated_page.mediabox.height
@@ -130,15 +129,18 @@ class DoublePage:
     
         # Render the content of the original page onto each new half page
         # For the left half
-        left_rotated_page = copy(rotated_page)
+        left_rotated_page = copy(page)
+        # undo the rotation
+        left_rotated_page.rotate(-rotation)
         left_rotated_page.add_transformation(Transformation().translate(0, 0))
         left_half.merge_page(left_rotated_page)
         
         # For the right half
-        right_rotated_page = copy(rotated_page)
+        right_rotated_page = copy(page)
+        # undo the rotation
+        right_rotated_page.rotate(-rotation)
         right_rotated_page.add_transformation(Transformation().translate(-width/2, 0))
         right_half.merge_page(right_rotated_page)
-
     
         # Calculate booklet page numbers
         if index % 2 == 0:  # even index (0-based)
@@ -259,21 +261,46 @@ class PdfFile:
             double_page_list.append(double_page)
 
         return double_page_list
+    
+    def create_double_page_with_numbers(self, left_page_number, right_page_number):
+        """Generate a double PDF page with the given page numbers."""
+        buffer = BytesIO()
+        width, height = pagesizes.A4  # Landscape A4
         
-    def create_example_booklet(self, double_pages=3):
+        c = canvas.Canvas(buffer, pagesize=(width, height))
+        
+        # Drawing squares for the left and right pages
+        c.rect(100, 350, 300, 300, fill=0)  # Left page square
+        c.rect(width-400, 350, 300, 300, fill=0)  # Right page square
+
+        # Placing numbers in the center of the squares
+        c.setFont("Helvetica-Bold", 120)
+        c.drawCentredString(width/4, 500, str(left_page_number))
+        c.drawCentredString(3*width/4, 500, str(right_page_number))
+        
+        c.showPage()
+        c.save()
+        
+        buffer.seek(0)
+        return PdfReader(buffer)
+        
+    def create_example_booklet(self, double_pages=2,with_random_rotation:bool=False):
         """Creates a dummy booklet pdf with the specified number of double pages."""
         writer = PdfWriter()
-        height,width=pagesizes.A4 # landscape A4
-        
         double_pages=self.create_double_pages(double_pages)
 
         for double_page in double_pages:
             # Create an empty double page of 'A4 landscape' size
-            double_page.page = PageObject.create_blank_page(width=width, height=height)
-    
-            # Left half of the page with debug info
-            page_debug = double_page.add_debug_info()
-            writer.add_page(page_debug)
+            left=double_page.left
+            right=double_page.right
+            reader=self.create_double_page_with_numbers(left.page_num, right.page_num)
+            rotated_page = reader.pages[0]
+            # If random rotation is enabled, rotate the page randomly
+            if with_random_rotation:
+                angle = random.choice([0, 90, 180, 270])
+                rotated_page = rotated_page.rotate(angle)
+            double_page.page = rotated_page
+            writer.add_page(double_page.page)
         
         with open(self.filename, "wb") as output_file:
             writer.write(output_file)
@@ -308,6 +335,16 @@ class PDFTool:
     def split_booklet_style(self) -> None:
         """
         Split a booklet-style PDF into individual pages.
+ 
+        Input is a collection of A4 landscape double pages, 
+        scanned from an A5 booklet.
+        
+        Some pages might have been rotated to visualize them in a human readable way (instead of e.g. upside/down).
+        
+
+        Goal: Split the A4 landscape pages into individual A5 pages taking the rotation into account
+        Expected Output: Instead of e.g. 50 double pages containing two A5 pages each, we should have 100 individual pages in A4 format.
+
         """
         if self.verbose:
             print(f"Processing {self.input_file.filename} ...")

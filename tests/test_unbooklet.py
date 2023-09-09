@@ -17,13 +17,13 @@ class TestPDFTool(Basetest):
     def setUp(self, debug=False, profile=True):
         Basetest.setUp(self, debug=debug, profile=profile)
         
-    def create_booklet(self,double_pages:int = 2):
+    def create_booklet(self,double_pages:int = 2,postfix="",do_rotate:bool=False):
         """
         create a booklet
         """
-        booklet_pdf_path=f"/tmp/example_booklet_{double_pages}.pdf"
+        booklet_pdf_path=f"/tmp/example_booklet_{double_pages}{postfix}.pdf"
         booklet_pdf=PdfFile(booklet_pdf_path)
-        booklet_pdf.create_example_booklet(double_pages)
+        booklet_pdf.create_example_booklet(double_pages,with_random_rotation=do_rotate)
         booklet_pdf.open()
         self.show_debug(booklet_pdf_path)
         return booklet_pdf
@@ -93,6 +93,8 @@ class TestPDFTool(Basetest):
         """
         test even page booklet
         """
-        for double_pages in range(2,4):
-            booklet=self.create_booklet(double_pages)
-            self.check_split(booklet,double_pages*2)
+        for do_rotate in [True,False]:
+            postfix="_rot" if do_rotate else "" 
+            for double_pages in range(2,8,2):
+                booklet=self.create_booklet(double_pages,postfix=postfix,do_rotate=do_rotate)
+                self.check_split(booklet,double_pages*2)
