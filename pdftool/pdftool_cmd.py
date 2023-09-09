@@ -14,38 +14,50 @@ class Watermark:
     """
     
     @classmethod
-    def get_watermark(cls, message: str) -> PdfFileWriter:
+    def get_watermark(cls, message: str, rotation: int = 0) -> PdfFileWriter:
         """
         Create a temporary PDF with the given message as a watermark.
-        
         Args:
             message (str): Message to display as watermark.
-            
+            rotation (int): Rotation degree of the watermark text.
         Returns:
             PdfFileWriter: Temporary PDF with watermark.
         """
         packet = BytesIO()
         can = canvas.Canvas(packet, pagesize=A4)  # Use A4 pagesize
-        # Calculate coordinates to center the message on the page
+        
         text_width = can.stringWidth(message, 'Helvetica', 18)
+        text_height = 18  # size of the font
+        
         x = (A4[0] - text_width) / 2
-        y = A4[1] / 2
+        y = (A4[1] + text_height) / 2
+    
+        can.saveState()  # Save the current state
+    
+        # Adjusting for rotation
+        if rotation:
+            can.translate(A4[0] / 2, A4[1] / 2)  # Move to the center
+            can.rotate(rotation)  # Rotate
+            can.translate(-A4[0] / 2, -A4[1] / 2)  # Move back to the origin
         
         can.setFont('Helvetica', 18)
         can.drawString(x, y, message)
+    
+        can.restoreState()  # Restore to the previous state
         can.save()
-
+    
         packet.seek(0)
         new_pdf = PdfFileReader(packet)
-
+    
         watermark = PdfFileWriter()
         watermark.add_page(new_pdf.getPage(0))
         
         return watermark
+
     
     @classmethod
-    def get_watermarked_page(cls,page,message:str):
-        watermark = cls.get_watermark(message)
+    def get_watermarked_page(cls, page, message: str, rotation: int = 0):
+        watermark = cls.get_watermark(message, rotation)
         watermarked_page = copy(page)
             
         # Merge watermark onto the page
@@ -69,8 +81,8 @@ class HalfPage:
     
     def add_debug_info(self):
         debug_info=str(self)
-        #watermarked_page=Watermark.get_watermarked_page(self.page, debug_info)      
-        return self.page
+        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info)      
+        return watermarked_page
 
 @dataclass
 class DoublePage:
@@ -135,7 +147,7 @@ class DoublePage:
     
     def add_debug_info(self):
         debug_info=str(self)
-        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info)      
+        watermarked_page=Watermark.get_watermarked_page(self.page, debug_info,self.rotation)      
         return watermarked_page
 
 @dataclass
