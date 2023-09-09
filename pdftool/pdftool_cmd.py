@@ -175,9 +175,14 @@ class PdfFile:
     pages: dict = None
     
     def __post_init__(self):
+        """
+        set my reader
+        """
         if os.path.exists(self.filename):
             self.file_obj = open(self.filename, "rb")
             self.reader = PdfReader(self.file_obj)
+        else:
+            raise ValueError(f"{self.filename} doesn't exist")
         
     def close(self):
         if self.file_obj:

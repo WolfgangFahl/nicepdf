@@ -18,6 +18,9 @@ class TestPDFTool(Basetest):
         Basetest.setUp(self, debug=debug, profile=profile)
         
     def create_booklet(self,double_pages:int = 2):
+        """
+        create a booklet
+        """
         booklet_pdf_path=f"/tmp/example_booklet_{double_pages}.pdf"
         booklet_pdf=PdfFile(booklet_pdf_path)
         booklet_pdf.create_example_booklet(double_pages)
@@ -25,6 +28,9 @@ class TestPDFTool(Basetest):
         return booklet_pdf
         
     def show_debug(self,pdf_path:str):
+        """
+        optionally show the pdf_file at the given file
+        """
         if self.debug:
             if sys.platform == "darwin":  # Darwin indicates macOS
                 os.system(f"open {pdf_path}")
@@ -35,6 +41,9 @@ class TestPDFTool(Basetest):
                 
             
     def check_split(self,pdf_file,expected_pages:int):
+        """
+        check the split of the given pdf_file
+        """
         # Creating an instance of the PDFTool class
         output_path=pdf_file.filename.replace(".pdf","_out.pdf")
         pdf_tool = PDFTool(pdf_file.filename, output_path, debug=self.debug)
@@ -69,7 +78,7 @@ class TestPDFTool(Basetest):
                            
     def test_read_booklet(self):
         """
-        Test the extract_half_pages method.
+        Test the read_booklet method
         """
         pdf_file=self.create_booklet()
         pdf_file.read_booklet()
