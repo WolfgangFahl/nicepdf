@@ -1,4 +1,4 @@
-from PyPDF2 import PdfReader, PdfWriter, PageObject
+from PyPDF2 import PdfReader, PdfWriter, PageObject, Transformation
 from tqdm import tqdm
 from copy import copy
 from dataclasses import dataclass
@@ -122,14 +122,23 @@ class DoublePage:
         # Split the rotated page
         width = rotated_page.mediabox.width
         height = rotated_page.mediabox.height
+        
+        # Create two new blank pages with half the width of the original
+        pdf_writer = PdfWriter()
+        left_half = pdf_writer.add_blank_page(width=width, height=height)
+        right_half = pdf_writer.add_blank_page(width=width, height=height)
     
-        left_half = copy(rotated_page)
-        left_half.cropbox.lower_left = (0, 0)
-        left_half.cropbox.upper_right = (width / 2, height)
-    
-        right_half = copy(rotated_page)
-        right_half.cropbox.lower_left = (width / 2, 0)
-        right_half.cropbox.upper_right = (width, height)
+        # Render the content of the original page onto each new half page
+        # For the left half
+        left_rotated_page = copy(rotated_page)
+        left_rotated_page.add_transformation(Transformation().translate(0, 0))
+        left_half.merge_page(left_rotated_page)
+        
+        # For the right half
+        right_rotated_page = copy(rotated_page)
+        right_rotated_page.add_transformation(Transformation().translate(-width/2, 0))
+        right_half.merge_page(right_rotated_page)
+
     
         # Calculate booklet page numbers
         if index % 2 == 0:  # even index (0-based)
