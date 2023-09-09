@@ -108,19 +108,26 @@ class DoublePage:
 
     @classmethod
     def from_page(cls, page, index, total_pages):
-        width = page.mediaBox.getWidth()
-        height = page.mediaBox.getHeight()  # Calculating height only once
+        # Get the rotation of the original page
+        rotation = page.get('/Rotate', 0)
     
-        # Split the A4 page into two A5 halves (left and right).
-        left_half = copy(page)
+        # Create a rotated copy of the original page
+        rotated_page = copy(page)
+        rotated_page.rotateCounterClockwise(rotation)
+    
+        # Split the rotated page
+        width = rotated_page.mediaBox.getWidth()
+        height = rotated_page.mediaBox.getHeight()
+    
+        left_half = copy(rotated_page)
         left_half.cropBox.lowerLeft = (0, 0)
         left_half.cropBox.upperRight = (width / 2, height)
     
-        right_half = copy(page)
+        right_half = copy(rotated_page)
         right_half.cropBox.lowerLeft = (width / 2, 0)
         right_half.cropBox.upperRight = (width, height)
-        
-        # Calculate the correct booklet page numbers.
+    
+        # Calculate booklet page numbers
         if index % 2 == 0:  # even index (0-based)
             left_num = total_pages - index
             right_num = index + 1
@@ -128,13 +135,12 @@ class DoublePage:
             left_num = index + 1
             right_num = total_pages - index
     
-        # Create HalfPage instances for each half.
+        # Create HalfPage instances for each half
         left = HalfPage(page_num=left_num, page=left_half)
         right = HalfPage(page_num=right_num, page=right_half)
     
-        # Return a DoublePage instance.
-        return cls(page=page, rotation=page.get('/Rotate', 0), 
-                   left=left, right=right, page_index=index)
+        # Return a DoublePage instance
+        return cls(page=page, rotation=rotation, left=left, right=right, page_index=index)
 
         
     def rotation_symbol(self)->str:
