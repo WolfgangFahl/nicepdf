@@ -6,4 +6,4 @@ if [ $? -ne 0 ]
 then
   pip install green
 fi
-green
+green tests -s 1
