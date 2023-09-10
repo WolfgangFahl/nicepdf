@@ -7,7 +7,7 @@ from typing import Optional
 from nicegui import ui, Client
 import os
 import sys
-from pdftool.version import Version
+from nicepdf.version import Version
 import traceback
 
 class WebServer:
@@ -18,7 +18,8 @@ class WebServer:
 
     def __init__(self):
         """Constructs all the necessary attributes for the WebServer object."""
-        
+        self.is_local=False
+         
         @ui.page('/')
         async def home(client: Client):
             return await self.home(client)
@@ -37,6 +38,23 @@ class WebServer:
         if self.log_view:
             self.log_view.push(self.error_msg)
         print(self.error_msg,file=sys.stderr)
+        
+    def link_button(self, name: str, target: str, icon_name: str,new_tab:bool=True):
+        """
+        Creates a button with a specified icon that opens a target URL upon being clicked.
+    
+        Args:
+            name (str): The name to be displayed on the button.
+            target (str): The target URL that should be opened when the button is clicked.
+            icon_name (str): The name of the icon to be displayed on the button.
+            new_tab(bool): if True open link in new tab
+    
+        Returns:
+            The button object.
+        """
+        with ui.button(name,icon=icon_name) as button:
+            button.on("click",lambda: (ui.open(target,new_tab=new_tab)))
+        return button
         
     
     def tool_button(self,tooltip:str,icon:str,handler:callable=None,toggle_icon:str=None)->ui.button:
@@ -88,4 +106,7 @@ class WebServer:
         """
         self.args=args
         self.input=args.input
+        self.is_local=args.local
+        self.root_path=os.path.abspath(args.root_path) 
+        self.render_on_load=args.render_on_load
         ui.run(title=Version.name, host=args.host, port=args.port, show=args.client,reload=False)

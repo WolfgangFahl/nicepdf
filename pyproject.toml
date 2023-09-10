@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pdftool"
+name = "nicepdf"
 authors = [
   {name = "Wolfgang Fahl", email = "wf@bitplan.com"}
 ]
@@ -36,12 +36,12 @@ classifiers=[
 dynamic = ["version", "description"]
 
 [tool.hatch.version]
-path = "pdftool/__init__.py"
+path = "nicepdf/__init__.py"
 
 [project.urls]
-Home = "https://github.com/WolfgangFahl/pdftool"
-Documentation = "https://wiki.bitplan.com/index.php/pdftool"
-Source = "https://github.com/WolfgangFahl/pdftool"
+Home = "https://github.com/WolfgangFahl/nicepdf"
+Documentation = "https://wiki.bitplan.com/index.php/nicepdf"
+Source = "https://github.com/WolfgangFahl/nicepdf"
 
 [project.optional-dependencies]
 test = [
@@ -49,11 +49,11 @@ test = [
 ]
 
 [tool.hatch.build.targets.wheel]
-only-include = ["pdftool"]
+only-include = ["nicepdf"]
 
 [tool.hatch.build.targets.wheel.sources]
-"pdftool" = "pdftool"
+"nicepdf" = "nicepdf"
 
 [project.scripts]
-pdftool = "pdftool.pdftool_cmd:main"
+nicepdf = "nicepdf.nicepdf_cmd:main"
 

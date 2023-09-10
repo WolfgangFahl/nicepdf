@@ -6,8 +6,8 @@ import argparse
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors, pagesizes
 from io import BytesIO
-from pdftool.version import Version
-from pdftool.webserver import WebServer
+from nicepdf.version import Version
+from nicepdf.webserver import WebServer
 import os
 import random
 import sys

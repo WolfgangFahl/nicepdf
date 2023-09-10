@@ -7,7 +7,7 @@ Created on 2021-08-19
 import getpass
 from unittest import TestCase
 import os
-from pdftool.profiler import Profiler
+from nicepdf.profiler import Profiler
 
 class Basetest(TestCase):
     """

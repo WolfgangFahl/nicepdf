@@ -3,28 +3,23 @@ Created on 2023-09-09
 
 @author: wf
 '''
-'''
-Created on 2023-06-19
-
-@author: wf
-'''
-import pdftool
+import nicepdf
 
 class Version(object):
     """
-    Version handling for pdftool
+    Version handling for nicepdf
     """
-    name = "pdftool"
-    version = pdftool.__version__
+    name = "nicepdf"
+    version = nicepdf.__version__
     date = '2023-09-07'
     updated = '2023-09-09'
     description = 'PDF manipulation tool',
     
     authors = 'Wolfgang Fahl'
     
-    doc_url="https://wiki.bitplan.com/index.php/pdftool"
-    chat_url="https://github.com/WolfgangFahl/pdftool/discussions"
-    cm_url="https://github.com/WolfgangFahl/pdftool"
+    doc_url="https://wiki.bitplan.com/index.php/nicepdf"
+    chat_url="https://github.com/WolfgangFahl/nicepdf/discussions"
+    cm_url="https://github.com/WolfgangFahl/nicepdf"
 
     license = f'''Copyright 2023 contributors. All rights reserved.
 
@@ -38,5 +33,3 @@ class Version(object):
 {description}
 
   Created by {authors} on {date} last updated {updated}"""
-
-
