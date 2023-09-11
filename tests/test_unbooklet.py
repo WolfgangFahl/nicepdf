@@ -6,7 +6,7 @@ Created on 2023-09-09
 import os
 import sys
 from PyPDF2 import PdfReader
-from nicepdf.nicepdf_cmd import PDFTool,PdfFile
+from nicepdf.pdftool import PDFTool,PdfFile
 from tests.basetest import Basetest
 import webbrowser
 

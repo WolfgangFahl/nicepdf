@@ -7,7 +7,7 @@ Created on 2021-08-19
 import getpass
 from unittest import TestCase
 import os
-from nicepdf.profiler import Profiler
+from ngwidgets.profiler import Profiler
 
 class Basetest(TestCase):
     """
