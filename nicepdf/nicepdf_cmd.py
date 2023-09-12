@@ -17,10 +17,13 @@ class NicePdfCmd(WebserverCmd):
         pass
     
     def getArgParser(self,description:str,version_msg)->ArgumentParser:
+        """
+        override the default argparser call
+        """        
         description="Split a PDF booklet into individual pages."
         parser=super().getArgParser(description, version_msg)
         parser.add_argument("-o","--output", type=str, help="Path to the output PDF file.")
-        parser.add_argument("-v", "--verbose", dest="debug", action="store_true", help="show verbose output [default: %(default)s]")
+        parser.add_argument("-v", "--verbose", action="store_true", help="show verbose output [default: %(default)s]")
         parser.add_argument("-rp", "--root_path",default=None,help="path to pdf files [default: %(default)s]")
         parser.add_argument("-r", "--from_binder", action="store_true", help="Handle case when pages have been scanned in reverse order starting with the middle pages from the binder.")
         return parser
