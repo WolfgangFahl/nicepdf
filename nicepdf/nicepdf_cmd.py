@@ -20,7 +20,8 @@ class NicePdfCmd(WebserverCmd):
         parser=super().getArgParser(description, version_msg)
         parser.add_argument("-o","--output", type=str, help="Path to the output PDF file.")
         parser.add_argument("-v", "--verbose", dest="debug", action="store_true", help="show verbose output [default: %(default)s]")
-  
+        parser.add_argument("-rp", "--root_path",default=None,help="path to pdf files [default: %(default)s]")
+
         return parser
     
     def cmd_main(self,argv:list=None):

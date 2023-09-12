@@ -4,8 +4,10 @@ Created on 2023-09-09
 @author: wf
 '''
 import nicepdf
+from dataclasses import dataclass
 
-class Version(object):
+@dataclass
+class Version:
     """
     Version handling for nicepdf
     """
