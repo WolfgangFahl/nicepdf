@@ -125,17 +125,47 @@ class DoublePage:
         return new_page
     
     @classmethod
-    def calculate_booklet_page_numbers(cls,index:int, total_pages:int, from_binder:bool):
-        """Calculate the left and right page numbers based on the current index, 
-        total pages, and scanning method."""
+    def calculate_booklet_page_numbers(cls, index: int, total_pages: int, from_binder: bool):
+        """
+        Calculate the left and right page numbers based on the current index, 
+        total pages, and scanning method.
+    
+        For total_pages=100:
+        - Standard scanning (not from binder):
+          - Even indices: 0 => (100, 1), 2 => (98, 3), 4 => (96, 5) ...
+          - Odd indices: 1 => (2, 99), 3 => (4, 97) ...
+        - Scanning from the binder:
+          - Even indices: 0 => (50, 51), 2 => (48, 53), 4 => (46, 55) ...
+          - Odd indices: 1 => (52, 49), 3 => (54, 47), 5=>(56,45) ...
+
+        For total_pages=8:
+        - Standard scanning (not from binder):
+          - Even indices: 0 => (8, 1), 2 => (6, 3)
+          - Odd indices: 1 => (2, 7), 3 => (4, 5)
+    
+        - Scanning from the binder:
+          - Even indices: 0 => (4, 5), 2 => (2, 7)
+          - Odd indices: 1 => (6, 3), 3 => (8, 1)
+        """ 
+        mid = total_pages//2  # Finding the middle of the booklet
         
         if from_binder:
-            index = total_pages - 1 - index
-        
-        if index % 2 == 0:  # even index (0-based)
-            return total_pages - index, index + 1
+            if index % 2 == 0:  # even index (0-based)
+                left_num = mid - index
+                right_num = mid + index +1
+            else:
+                left_num = mid + index +1
+                right_num = mid - index 
         else:
-            return index + 1, total_pages - index
+            if index % 2 == 0:  # even index (0-based)
+                left_num = total_pages - index
+                right_num = index + 1
+            else:
+                left_num = index + 1
+                right_num = total_pages - index
+    
+        return left_num, right_num
+
 
     @classmethod
     def from_page(cls, page, index, total_pages,from_binder:bool=False):
