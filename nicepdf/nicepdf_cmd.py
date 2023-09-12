@@ -22,7 +22,7 @@ class NicePdfCmd(WebserverCmd):
         parser.add_argument("-o","--output", type=str, help="Path to the output PDF file.")
         parser.add_argument("-v", "--verbose", dest="debug", action="store_true", help="show verbose output [default: %(default)s]")
         parser.add_argument("-rp", "--root_path",default=None,help="path to pdf files [default: %(default)s]")
-
+        parser.add_argument("-r", "--from_binder", action="store_true", help="Handle case when pages have been scanned in reverse order starting with the middle pages from the binder.")
         return parser
     
     def cmd_main(self,argv:list=None):
@@ -31,7 +31,7 @@ class NicePdfCmd(WebserverCmd):
         """
         exit_code=super().cmd_main(argv)
         if self.args.input and self.args.output:
-            tool = PDFTool.from_args()
+            tool = PDFTool.from_args(self.args)
             if tool.args.input:
                 tool.split_booklet_style()
             return exit_code

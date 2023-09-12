@@ -123,9 +123,22 @@ class DoublePage:
         
         new_page.merge_page(rotated_page)
         return new_page
+    
+    @classmethod
+    def calculate_booklet_page_numbers(cls,index:int, total_pages:int, from_binder:bool):
+        """Calculate the left and right page numbers based on the current index, 
+        total pages, and scanning method."""
+        
+        if from_binder:
+            index = total_pages - 1 - index
+        
+        if index % 2 == 0:  # even index (0-based)
+            return total_pages - index, index + 1
+        else:
+            return index + 1, total_pages - index
 
     @classmethod
-    def from_page(cls, page, index, total_pages):
+    def from_page(cls, page, index, total_pages,from_binder:bool=False):
         # Get the rotation of the original page
         rotation = page.get('/Rotate', 0)
         width = page.mediabox.width
@@ -140,12 +153,7 @@ class DoublePage:
         right_half = cls.copy_page(writer=writer,page=rotated_page,width=a4_width/2, height=a4_height,tx=-a4_width/2, ty=0)
     
         # Calculate booklet page numbers
-        if index % 2 == 0:  # even index (0-based)
-            left_num = total_pages - index
-            right_num = index + 1
-        else:
-            left_num = index + 1
-            right_num = total_pages - index
+        left_num, right_num = cls.calculate_booklet_page_numbers(index, total_pages, from_binder)
     
         # Create HalfPage instances for each half
         left = HalfPage(page_num=left_num, page=left_half)
@@ -206,7 +214,7 @@ class PdfFile:
         if self.file_obj:
             self.file_obj.close()
 
-    def read_booklet(self,progress_bar=None):
+    def read_booklet(self,from_binder:bool=False,progress_bar=None):
         """
         read min input as a booklet
         """
@@ -218,7 +226,7 @@ class PdfFile:
         
         for i in range(double_page_count):
             page = self.reader.pages[i]
-            double_page = DoublePage.from_page(page, i, double_page_count * 2)
+            double_page = DoublePage.from_page(page, i, double_page_count * 2,from_binder=from_binder)
             self.double_pages.append(double_page)
             if progress_bar:
                 # Update the progress bar
@@ -341,6 +349,7 @@ class PDFTool:
         self.debug = debug
         self.args = None
         self.verbose=False
+        self.from_binder=False
         
     def split_booklet_style(self,progress_bar:Progressbar=None) -> None:
         """
@@ -363,7 +372,7 @@ class PDFTool:
             progress_bar=Progressbar(total=total_iterations, desc="Processing all pages", unit="step")
         self.progress_bar = progress_bar 
 
-        self.input_file.read_booklet(self.progress_bar)
+        self.input_file.read_booklet(from_binder=self.from_binder,progress_bar=self.progress_bar)
         # Change the description
         self.progress_bar.set_description("reordering pages")
         self.input_file.un_booklet()
@@ -389,36 +398,14 @@ class PDFTool:
             writer.write(output_file)
             
         self.input_file.close()
-            
-    @classmethod
-    def get_parser(cls):
-        """
-        Return an argparse parser for the PDFTool class.
-        """
-        parser = argparse.ArgumentParser(description="Split a PDF booklet into individual pages.")
-        parser.add_argument("-a","--about",help="show about info [default: %(default)s]",action="store_true")
-        parser.add_argument("-c","--client", action="store_true", help="start client [default: %(default)s]")
-        parser.add_argument("-d","--debug", action="store_true", help="Enable debugging watermarks.")
-        parser.add_argument("--host", default="localhost",
-                            help="the host to serve / listen from [default: %(default)s]")
-        parser.add_argument("--port",type=int,default=9849,help="the port to serve from [default: %(default)s]")
-        parser.add_argument("-i","--input", type=str, help="Path to the input PDF file.")
-        parser.add_argument("-o","--output", type=str, help="Path to the output PDF file.")
-        parser.add_argument("-s","--serve", action="store_true", help="start webserver [default: %(default)s]")
-        parser.add_argument("-v","--verbose", action="store_true", help="Give verbose output.")
-  
-        return parser
     
     @classmethod
-    def from_args(cls):
+    def from_args(cls,args):
         """
         Instantiate PDFTool from command-line arguments.
         """
-        parser = cls.get_parser()
-        args = parser.parse_args()
         tool=cls(args.input, args.output, args.debug)
         tool.args=args
         tool.verbose=args.verbose
-        return tool 
-        
-
+        tool.from_binder=args.from_binder
+        return tool

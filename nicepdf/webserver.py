@@ -50,6 +50,7 @@ class WebServer(InputWebserver):
         """
         if self.input_source:
             pdftool=PDFTool(self.input_source,self.output_path)
+            pdftool.from_binder=True
             if self.future:
                 self.future.cancel()
             self.future, result_coro = self.bth.execute_in_background(pdftool.split_booklet_style, progress_bar=self.progressbar)
