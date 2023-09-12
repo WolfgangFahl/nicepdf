@@ -11,6 +11,7 @@ class NicePdfCmd(WebserverCmd):
     """
     def __init__(self):
         """
+        constructor
         """
         WebserverCmd.__init__(self, Version, WebServer, DEBUG)
         pass

@@ -4,20 +4,15 @@ Created on 2023-09-07
 @author: wf
 '''
 from PyPDF2 import PdfReader, PdfWriter, Transformation
-from tqdm import tqdm
 from copy import copy
 from dataclasses import dataclass
 import argparse
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors, pagesizes
 from io import BytesIO
-from nicepdf.version import Version
-from nicepdf.webserver import WebServer
 import os
 import random
-import sys
-import webbrowser
-import traceback
+from ngwidgets.progress import Progressbar
 
 class Watermark:
     """
@@ -347,7 +342,7 @@ class PDFTool:
         self.args = None
         self.verbose=False
         
-    def split_booklet_style(self) -> None:
+    def split_booklet_style(self,progress_bar:Progressbar=None) -> None:
         """
         Split a booklet-style PDF into individual pages.
  
@@ -364,7 +359,9 @@ class PDFTool:
         if self.verbose:
             print(f"Processing {self.input_file.filename} ...")
         total_iterations=3*len(self.input_file.reader.pages)
-        self.progress_bar = tqdm(total=total_iterations, desc="Processing all pages", unit="step")
+        if progress_bar is None:
+            progress_bar=Progressbar(total=total_iterations, desc="Processing all pages", unit="step")
+        self.progress_bar = progress_bar 
 
         self.input_file.read_booklet(self.progress_bar)
         # Change the description
