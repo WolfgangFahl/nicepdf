@@ -5,7 +5,6 @@ Created on 2023-09-09
 """
 from nicegui import app, ui, Client
 from nicepdf.version import Version
-from ngwidgets.color_schema import ColorSchema
 from ngwidgets.file_selector import FileSelector
 from ngwidgets.input_webserver import InputWebserver
 from ngwidgets.progress import NiceguiProgressbar

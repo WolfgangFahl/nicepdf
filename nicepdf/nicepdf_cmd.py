@@ -24,7 +24,7 @@ class NicePdfCmd(WebserverCmd):
         parser=super().getArgParser(description, version_msg)
         parser.add_argument("-o","--output", type=str, help="Path to the output PDF file.")
         parser.add_argument("-v", "--verbose", action="store_true", help="show verbose output [default: %(default)s]")
-        parser.add_argument("-rp", "--root_path",default=None,help="path to pdf files [default: %(default)s]")
+        parser.add_argument("-rp", "--root_path",default=WebServer.examples_path(),help="path to pdf files [default: %(default)s]")
         parser.add_argument("-r", "--from_binder", action="store_true", help="Handle case when pages have been scanned in reverse order starting with the middle pages from the binder.")
         return parser
     
