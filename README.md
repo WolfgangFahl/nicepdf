@@ -1,5 +1,5 @@
-# pdftool
-PDF manipulation tools
+# nicepdf
+online PDF display and manipulation tool
 
 [![Join the discussion at https://github.com/WolfgangFahl/pdftool/discussions](https://img.shields.io/github/discussions/WolfgangFahl/pdftool)](https://github.com/WolfgangFahl/pdftool/discussions)
 [![pypi](https://img.shields.io/pypi/pyversions/pdftool)](https://pypi.org/project/pdftool/)
