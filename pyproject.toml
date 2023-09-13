@@ -17,7 +17,7 @@ dependencies = [
     "tqdm>=4.60.0",
     "reportlab>=3.5.67",
     "nicegui",
-    "ngwidgets>=0.0.14"
+    "ngwidgets>=0.0.15"
 ]
 
 requires-python = ">=3.8"

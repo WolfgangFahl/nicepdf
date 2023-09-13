@@ -5,6 +5,7 @@ Created on 2023-09-09
 """
 from nicegui import app, ui, Client
 from nicepdf.version import Version
+from ngwidgets.color_schema import ColorSchema
 from ngwidgets.file_selector import FileSelector
 from ngwidgets.input_webserver import InputWebserver
 from ngwidgets.progress import NiceguiProgressbar
@@ -18,12 +19,15 @@ class WebServer(InputWebserver):
     WebServer class that manages the server 
     
     """
-
+    @classmethod
+    def get_config(cls)->WebserverConfig:
+        copy_right="(c)2023 Wolfgang Fahl"
+        config=WebserverConfig(copy_right=copy_right,version=Version(),default_port=9859)
+        return config
+   
     def __init__(self):
         """Constructs all the necessary attributes for the WebServer object."""
-        copy_right="(c)2023 Wolfgang Fahl"
-        config=WebserverConfig(copy_right=copy_right,version=Version())
-        InputWebserver.__init__(self,config=config)
+        InputWebserver.__init__(self,config=WebServer.get_config())
         self.input_source=None
         self.output_path=None
         self.bth=BackgroundTaskHandler()
@@ -88,7 +92,7 @@ class WebServer(InputWebserver):
             self.show_pdf(self.pdf_split_view, self.output_path)
                 
         except BaseException as ex:
-            self.handle_exception(ex,self.do_trace)    
+            self.handle_exception(ex,self.do_trace)   
              
     async def home(self, _client:Client):
         """

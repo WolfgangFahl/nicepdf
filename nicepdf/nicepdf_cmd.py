@@ -2,7 +2,6 @@ from ngwidgets.cmd import WebserverCmd
 import sys
 from nicepdf.pdftool import PDFTool
 from argparse import ArgumentParser
-from nicepdf.version import Version
 from nicepdf.webserver import WebServer
 
 class NicePdfCmd(WebserverCmd):
@@ -13,7 +12,8 @@ class NicePdfCmd(WebserverCmd):
         """
         constructor
         """
-        WebserverCmd.__init__(self, Version, WebServer, DEBUG)
+        config=WebServer.get_config()
+        WebserverCmd.__init__(self, config, WebServer, DEBUG)
         pass
     
     def getArgParser(self,description:str,version_msg)->ArgumentParser:
