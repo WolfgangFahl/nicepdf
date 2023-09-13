@@ -12,6 +12,7 @@ from ngwidgets.webserver import WebserverConfig
 from ngwidgets.background import BackgroundTaskHandler
 from nicepdf.pdftool import PDFTool
 import os
+
 class WebServer(InputWebserver):
     """
     WebServer class that manages the server 
@@ -99,14 +100,14 @@ class WebServer(InputWebserver):
                         self.tool_button(tooltip="open",icon="file_open",handler=self.open_file)    
                 with splitter.after:
                     self.pdf_desc=ui.html("")
+            self.progressbar = NiceguiProgressbar(100,"work on PDF pages","steps")
+            slider_props='label-always'
+            self.page_slider = ui.slider(min=0, max=100, step=1, value=50,on_change=lambda e: self.on_page_change(e.value)).props(slider_props)
+        
             with ui.splitter() as splitter:
                 with splitter.before:
                     self.pdf_booklet_view=ui.html("pdf booklet").classes("w-full h-screen")
-                with splitter.after as self.video_container:
+                with splitter.after as self.pdf_container:
                     self.pdf_split_view=ui.html("pdf_split").classes("w-full h-screen")
-        slider_props='label-always'
-        self.progressbar = NiceguiProgressbar(100,"work on PDF pages","steps")
-
-        self.page_slider = ui.slider(min=0, max=100, step=1, value=50,on_change=lambda e: self.on_page_change(e.value)).props(slider_props)
-   
+      
         await self.setup_footer()
