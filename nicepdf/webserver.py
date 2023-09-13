@@ -21,7 +21,7 @@ class WebServer(InputWebserver):
     @classmethod
     def get_config(cls)->WebserverConfig:
         copy_right="(c)2023 Wolfgang Fahl"
-        config=WebserverConfig(copy_right=copy_right,version=Version(),default_port=9859)
+        config=WebserverConfig(copy_right=copy_right,version=Version(),default_port=9861)
         return config
    
     def __init__(self):
