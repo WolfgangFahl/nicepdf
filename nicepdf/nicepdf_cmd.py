@@ -47,7 +47,7 @@ def main(argv:list=None):
     exit_code=cmd.cmd_main(argv)
     return exit_code
         
-DEBUG = 1
+DEBUG = 0
 if __name__ == "__main__":
     if DEBUG:
         sys.argv.append("-d")

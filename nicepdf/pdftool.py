@@ -6,13 +6,12 @@ Created on 2023-09-07
 from PyPDF2 import PdfReader, PdfWriter, Transformation
 from copy import copy
 from dataclasses import dataclass
-import argparse
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors, pagesizes
 from io import BytesIO
 import os
 import random
-from ngwidgets.progress import Progressbar
+from ngwidgets.progress import Progressbar, TqdmProgressbar
 
 class Watermark:
     """
@@ -399,7 +398,7 @@ class PDFTool:
             print(f"Processing {self.input_file.filename} ...")
         total_iterations=3*len(self.input_file.reader.pages)
         if progress_bar is None:
-            progress_bar=Progressbar(total=total_iterations, desc="Processing all pages", unit="step")
+            progress_bar=TqdmProgressbar(total=total_iterations, desc="Processing all pages", unit="step")
         self.progress_bar = progress_bar 
 
         self.input_file.read_booklet(from_binder=self.from_binder,progress_bar=self.progress_bar)

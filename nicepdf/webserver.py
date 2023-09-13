@@ -34,6 +34,10 @@ class WebServer(InputWebserver):
         async def home(client: Client):
             return await self.home(client)
         
+        @ui.page('/settings')
+        async def settings():
+            return await self.settings()
+        
     def on_page_change(self,page_num:int):  
         """
         switch to the given page
@@ -50,10 +54,11 @@ class WebServer(InputWebserver):
         convert the booklet pdf to a plain pdf
         """
         if self.input_source:
-            pdftool=PDFTool(self.input_source,self.output_path)
+            pdftool=PDFTool(self.input_source,self.output_path,debug=self.debug)
             pdftool.from_binder=True
             if self.future:
                 self.future.cancel()
+            self.progressbar.reset()    
             self.future, result_coro = self.bth.execute_in_background(pdftool.split_booklet_style, progress_bar=self.progressbar)
             await result_coro()
             await self.render()
@@ -77,20 +82,25 @@ class WebServer(InputWebserver):
             self.input_source=self.input
             ui.notify(f"rendering {self.input_source}")
             self.show_pdf(self.pdf_booklet_view, self.input)
-            self.output_path=self.input.replace(".pdf","-A4.pdf")
+            debug_suffix="_debug" if self.debug else ""
+            self.output_path=self.input.replace(".pdf",f"-A4{debug_suffix}.pdf")
+            
             self.show_pdf(self.pdf_split_view, self.output_path)
                 
         except BaseException as ex:
             self.handle_exception(ex,self.do_trace)    
              
-    async def home(self, client:Client):
-        """Generates the home page with a pdf view"""
+    async def home(self, _client:Client):
+        """
+        Generates the home page with a pdf view
+        """
         self.setup_menu()
         with ui.element("div").classes("w-full h-full"):
             with ui.splitter() as splitter:
                 with splitter.before:
                     extensions = {"pdf": ".pdf"}
-                    self.pdf_selector=FileSelector(path=self.root_path,extensions=extensions,handler=self.read_and_optionally_render)
+                    filter_func=lambda item_name: not("-A4" in item_name)
+                    self.pdf_selector=FileSelector(path=self.root_path,extensions=extensions,handler=self.read_and_optionally_render,filter_func=filter_func)
                     self.input_input=ui.input(
                          value=self.input,
                          on_change=self.input_changed).props("size=100")
@@ -100,9 +110,9 @@ class WebServer(InputWebserver):
                         self.tool_button(tooltip="open",icon="file_open",handler=self.open_file)    
                 with splitter.after:
                     self.pdf_desc=ui.html("")
-            self.progressbar = NiceguiProgressbar(100,"work on PDF pages","steps")
             slider_props='label-always'
             self.page_slider = ui.slider(min=0, max=100, step=1, value=50,on_change=lambda e: self.on_page_change(e.value)).props(slider_props)
+            self.progressbar = NiceguiProgressbar(100,"work on PDF pages","steps")
         
             with ui.splitter() as splitter:
                 with splitter.before:
