@@ -50,10 +50,11 @@ test = [
 ]
 
 [tool.hatch.build.targets.wheel]
-only-include = ["nicepdf"]
+only-include = ["nicepdf","nicepdf_examples"]
 
 [tool.hatch.build.targets.wheel.sources]
 "nicepdf" = "nicepdf"
+"nicespdf_examples" = "nicepdf_examples"
 
 [project.scripts]
 nicepdf = "nicepdf.nicepdf_cmd:main"

@@ -42,6 +42,13 @@ class WebServer(InputWebserver):
         async def settings():
             return await self.settings()
         
+    @classmethod
+    def examples_path(cls)->str:
+        # the root directory (default: examples)
+        path = os.path.join(os.path.dirname(__file__), '../nicepdf_examples')
+        path = os.path.abspath(path)
+        return path
+        
     def on_page_change(self,page_num:int):  
         """
         switch to the given page
@@ -125,3 +132,9 @@ class WebServer(InputWebserver):
                     self.pdf_split_view=ui.html("pdf_split").classes("w-full h-screen")
       
         await self.setup_footer()
+        
+    def configure_run(self):
+        self.allowed_urls=[
+            self.examples_path(),
+            self.root_path
+        ]
