@@ -20,7 +20,6 @@ class NicePdfCmd(WebserverCmd):
         """
         override the default argparser call
         """        
-        description="Split a PDF booklet into individual pages."
         parser=super().getArgParser(description, version_msg)
         parser.add_argument("-o","--output", type=str, help="Path to the output PDF file.")
         parser.add_argument("-v", "--verbose", action="store_true", help="show verbose output [default: %(default)s]")
