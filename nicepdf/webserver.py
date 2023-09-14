@@ -65,7 +65,7 @@ class WebServer(InputWebserver):
         """
         if self.input_source:
             pdftool=PDFTool(self.input_source,self.output_path,debug=self.debug)
-            pdftool.from_binder=True
+            pdftool.from_binder=self.from_binder
             if self.future:
                 self.future.cancel()
             self.progressbar.reset()    
@@ -132,7 +132,14 @@ class WebServer(InputWebserver):
       
         await self.setup_footer()
         
+    def configure_settings(self):
+        """
+        add additional settings
+        """
+        ui.checkbox('from binder',value=self.from_binder).bind_value(self,"from_binder")
+        
     def configure_run(self):
+        self.from_binder=self.args.from_binder
         self.allowed_urls=[
             self.examples_path(),
             self.root_path
