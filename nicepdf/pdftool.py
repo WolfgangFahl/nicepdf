@@ -374,7 +374,7 @@ class PdfFile:
                 rotated_page = rotated_page.rotate(angle)
             double_page.page = rotated_page
             writer.add_page(double_page.page)
-        self.save()
+        self.save(writer)
 
 class PDFTool:
     """
