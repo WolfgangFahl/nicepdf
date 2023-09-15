@@ -68,6 +68,7 @@ class WebServer(InputWebserver):
             pdftool.from_binder=self.from_binder
             if self.future:
                 self.future.cancel()
+            self.progressbar.total=pdftool.get_total_steps()
             self.progressbar.reset()    
             self.future, result_coro = self.bth.execute_in_background(pdftool.split_booklet_style, progress_bar=self.progressbar)
             await result_coro()

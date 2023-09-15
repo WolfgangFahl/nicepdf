@@ -3,7 +3,7 @@ Created on 2023-09-07
 
 @author: wf
 '''
-from PyPDF2 import PdfReader, PdfWriter, Transformation
+from pypdf import PdfReader, PdfWriter, Transformation
 from copy import copy
 from dataclasses import dataclass
 from reportlab.pdfgen import canvas
@@ -68,7 +68,6 @@ class Watermark:
         watermark.add_page(new_pdf.pages[0])
         
         return watermark
-
     
     @classmethod
     def get_watermarked_page(cls, page, message: str):
@@ -110,17 +109,33 @@ class DoublePage:
     right: HalfPage
     page_index: int # counting from 0
     
+    @classmethod
+    def save_page(self,page,file_path:str):
+        """
+        save a single given page to the givne file path
+        """
+        writer=PdfWriter()
+        writer.add_page(page)
+        with open(file_path, "wb") as output_file:
+            writer.write(output_file)
+
     @classmethod 
-    def copy_page(self,writer:PdfWriter,page,width,height,tx,ty):
+    def copy_page(cls,writer:PdfWriter,page,width,height,tx,ty):
+        """
+        get a copy of the given page 
+        """
         new_page=writer.add_blank_page(width, height)
         # Get the rotation of the original page
         rotation = page.get('/Rotate', 0)
         rotated_page=copy(page)
         if rotation!=0:
             rotated_page.rotate(-rotation)
+            pass
         rotated_page.add_transformation(Transformation().translate(tx, ty))
         
-        new_page.merge_page(rotated_page)
+        # doesn't work as expected
+        new_page.merge_page(rotated_page) 
+        #new_page.merge_rotated_page(rotated_page)
         return new_page
     
     @classmethod
@@ -165,16 +180,20 @@ class DoublePage:
     
         return left_num, right_num
 
-
     @classmethod
-    def from_page(cls, page, index, total_pages,from_binder:bool=False):
+    def from_page(cls, page, index, total_pages,from_binder:bool=False,debug:bool=False):
         # Get the rotation of the original page
         rotation = page.get('/Rotate', 0)
         width = page.mediabox.width
         height = page.mediabox.height
         a4_height, a4_width = pagesizes.A4  # Landscape A4
+        if height>width and rotation==0:
+            print(f"Rotation missing for page {index}") 
         writer = PdfWriter()
         rotated_page = cls.copy_page(writer=writer,page=page,width=a4_width, height=a4_height,tx=0,ty=0)
+        if debug:
+            file_path=f"/tmp/debug-{index}.pdf"
+            cls.save_page(rotated_page, file_path)
         
         # Create two new blank pages with half the width of the original
     
@@ -193,6 +212,9 @@ class DoublePage:
 
         
     def rotation_symbol(self)->str:
+        """
+        return a symbol for the rotation of this page
+        """
         rotation=self.rotation
         # Use Unicode symbols for rotation
         if rotation == 0:
@@ -238,12 +260,16 @@ class PdfFile:
             self.reader = PdfReader(self.file_obj)
         else:
             self.file_obj=None
+            
+    def save(self,writer):
+        with open(self.filename, "wb") as output_file:
+            writer.write(output_file)
         
     def close(self):
         if self.file_obj:
             self.file_obj.close()
 
-    def read_booklet(self,from_binder:bool=False,progress_bar=None):
+    def read_booklet(self,from_binder:bool=False,progress_bar=None,debug:bool=False):
         """
         read min input as a booklet
         """
@@ -255,7 +281,7 @@ class PdfFile:
         
         for i in range(double_page_count):
             page = self.reader.pages[i]
-            double_page = DoublePage.from_page(page, i, double_page_count * 2,from_binder=from_binder)
+            double_page = DoublePage.from_page(page, i, double_page_count * 2,from_binder=from_binder,debug=debug)
             self.double_pages.append(double_page)
             if progress_bar:
                 # Update the progress bar
@@ -348,9 +374,7 @@ class PdfFile:
                 rotated_page = rotated_page.rotate(angle)
             double_page.page = rotated_page
             writer.add_page(double_page.page)
-        
-        with open(self.filename, "wb") as output_file:
-            writer.write(output_file)
+        self.save()
 
 class PDFTool:
     """
@@ -380,6 +404,19 @@ class PDFTool:
         self.verbose=False
         self.from_binder=False
         
+    def get_total_steps(self)->int:
+        """
+        get the number of steps to be performed
+        
+        e.g. for 50 pages there are 150 steps:
+        
+        50 x extraction of left and half
+        50 x writing left pages
+        50 x writing right pages
+        """
+        total_steps=3*len(self.input_file.reader.pages)
+        return total_steps
+    
     def split_booklet_style(self,progress_bar:Progressbar=None) -> None:
         """
         Split a booklet-style PDF into individual pages.
@@ -396,12 +433,12 @@ class PDFTool:
         """
         if self.verbose:
             print(f"Processing {self.input_file.filename} ...")
-        total_iterations=3*len(self.input_file.reader.pages)
         if progress_bar is None:
-            progress_bar=TqdmProgressbar(total=total_iterations, desc="Processing all pages", unit="step")
-        self.progress_bar = progress_bar 
+            total_steps=self.get_total_steps()
+            progress_bar=TqdmProgressbar(total=total_steps, desc="Processing all pages", unit="step")
+        self.progress_bar = progress_bar
 
-        self.input_file.read_booklet(from_binder=self.from_binder,progress_bar=self.progress_bar)
+        self.input_file.read_booklet(from_binder=self.from_binder,progress_bar=self.progress_bar,debug=self.debug)
         # Change the description
         self.progress_bar.set_description("reordering pages")
         self.input_file.un_booklet()

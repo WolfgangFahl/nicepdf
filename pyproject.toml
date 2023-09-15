@@ -13,11 +13,11 @@ maintainers = [
 readme = "README.md"
 license= "Apache-2.0"
 dependencies = [
-    "PyPDF2>=1.26.0",
+    "PyPDF>=3.16.0",
     "tqdm>=4.60.0",
     "reportlab>=3.5.67",
     "nicegui",
-    "ngwidgets>=0.0.18"
+    "ngwidgets>=0.0.20"
 ]
 
 requires-python = ">=3.8"
