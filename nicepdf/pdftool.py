@@ -3,11 +3,12 @@ Created on 2023-09-07
 
 @author: wf
 '''
-from pypdf import PdfReader, PdfWriter, Transformation
+from pypdf import PageObject,PdfReader, PdfWriter, Transformation
 from copy import copy
 from dataclasses import dataclass
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors, pagesizes
+from reportlab.lib.units import mm
 from io import BytesIO
 import os
 import random
@@ -120,22 +121,20 @@ class DoublePage:
             writer.write(output_file)
 
     @classmethod 
-    def copy_page(cls,writer:PdfWriter,page,width,height,tx,ty):
+    def copy_page(cls,page,width,height,tx,ty):
         """
         get a copy of the given page 
         """
-        new_page=writer.add_blank_page(width, height)
+        new_page = PageObject.create_blank_page(pdf=None, width=width, height=height)
         # Get the rotation of the original page
         rotation = page.get('/Rotate', 0)
         rotated_page=copy(page)
         if rotation!=0:
             rotated_page.rotate(-rotation)
-            pass
+        pass
         rotated_page.add_transformation(Transformation().translate(tx, ty))
-        
         # doesn't work as expected
-        new_page.merge_page(rotated_page) 
-        #new_page.merge_rotated_page(rotated_page)
+        new_page.merge_page(rotated_page)
         return new_page
     
     @classmethod
@@ -189,16 +188,15 @@ class DoublePage:
         a4_height, a4_width = pagesizes.A4  # Landscape A4
         if height>width and rotation==0:
             print(f"Rotation missing for page {index}") 
-        writer = PdfWriter()
-        rotated_page = cls.copy_page(writer=writer,page=page,width=a4_width, height=a4_height,tx=0,ty=0)
+        rotated_page = cls.copy_page(page=page,width=a4_width, height=a4_height,tx=0,ty=0)
         if debug:
             file_path=f"/tmp/debug-{index}.pdf"
             cls.save_page(rotated_page, file_path)
         
         # Create two new blank pages with half the width of the original
     
-        left_half = cls.copy_page(writer=writer,page=rotated_page,width=a4_width/2, height=a4_height,tx=0,ty=0)
-        right_half = cls.copy_page(writer=writer,page=rotated_page,width=a4_width/2, height=a4_height,tx=-a4_width/2, ty=0)
+        left_half = cls.copy_page(page=rotated_page,width=a4_width/2, height=a4_height,tx=0,ty=0)
+        right_half = cls.copy_page(page=rotated_page,width=a4_width/2, height=a4_height,tx=-a4_width/2, ty=0)
     
         # Calculate booklet page numbers
         left_num, right_num = cls.calculate_booklet_page_numbers(index, total_pages, from_binder)
@@ -335,25 +333,52 @@ class PdfFile:
 
         return double_page_list
     
-    def create_double_page_with_numbers(self, left_page_number, right_page_number):
+    @classmethod
+    def draw_centered_rectangle(cls,canvas, large_width, large_height, margin, fill=0):
+        """Draw a centered smaller rectangle within a larger rectangle after reducing its size by a given margin."""
+        small_width = large_width - 2 * margin
+        small_height = large_height - 2 * margin
+        x = (large_width - small_width) / 2
+        y = (large_height - small_height) / 2
+        canvas.rect(x, y, small_width, small_height, fill=fill)
+        
+    @classmethod
+    def draw_double_page_with_margin(cls,c, page_width, page_height, margin):
+        """Draw two centered rectangles (representing pages) side-by-side with a given margin."""
+        half_width = page_width / 2
+    
+        # Draw left rectangle
+        cls.draw_centered_rectangle(c, half_width, page_height, margin)
+    
+        # Move to right side and draw right rectangle
+        c.translate(half_width, 0)
+        cls.draw_centered_rectangle(c, half_width, page_height, margin)
+        
+        # Reset translation for next iteration
+        c.translate(-half_width, 0)
+
+    def create_double_page_with_numbers(self, left_page_number, right_page_number, inner_margin=5*mm, font_size=240):
         """Generate a double PDF page with the given page numbers."""
         buffer = BytesIO()
-        width, height = pagesizes.A4  # Landscape A4
-        
-        c = canvas.Canvas(buffer, pagesize=(width, height))
-        
-        # Drawing squares for the left and right pages
-        c.rect(100, 350, 300, 300, fill=0)  # Left page square
-        c.rect(width-400, 350, 300, 300, fill=0)  # Right page square
 
-        # Placing numbers in the center of the squares
-        c.setFont("Helvetica-Bold", 120)
-        c.drawCentredString(width/4, 500, str(left_page_number))
-        c.drawCentredString(3*width/4, 500, str(right_page_number))
+        a4_landscape = pagesizes.landscape(pagesizes.A4)
         
+        c = canvas.Canvas(buffer, pagesize=a4_landscape)
+
+        # Drawing the two centered rectangles side-by-side
+        self.draw_double_page_with_margin(c, *a4_landscape, inner_margin)
+        
+        # Placing numbers in the center of the rectangles
+        vertical_adjustment = font_size / 3.5  # Adjust based on the specific font metrics
+        half_width = a4_landscape[0] / 2
+
+        c.setFont("Helvetica-Bold", font_size)
+        c.drawCentredString(half_width / 2, a4_landscape[1] / 2 - vertical_adjustment, str(left_page_number))
+        c.drawCentredString(1.5 * half_width, a4_landscape[1] / 2 - vertical_adjustment, str(right_page_number))
+
         c.showPage()
         c.save()
-        
+
         buffer.seek(0)
         return PdfReader(buffer)
         
