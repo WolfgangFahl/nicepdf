@@ -10,6 +10,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors, pagesizes
 from reportlab.lib.units import mm
 from io import BytesIO
+import math
 import os
 import random
 from ngwidgets.progress import Progressbar, TqdmProgressbar
@@ -469,16 +470,19 @@ class PDFTool:
         self.input_file.un_booklet()
     
         writer=PdfWriter()
-
+        # Scale factor between A5 and A4
+        scale_factor=math.sqrt(2)
+   
         page_nums=sorted(list(self.input_file.pages.keys()))
         self.progress_bar.set_description("writing pages")
         for page_num in page_nums:
             half_page=self.input_file.pages[page_num]
             if self.debug:
                 page = half_page.add_debug_info()  
-                writer.add_page(page)
             else:
-                writer.add_page(half_page.page)
+                page=half_page.page
+            page.scale_by(scale_factor)
+            writer.add_page(page)
             # Update the progress bar
             self.progress_bar.update(1)
     
