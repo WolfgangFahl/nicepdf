@@ -443,6 +443,37 @@ class PDFTool:
         total_steps=3*len(self.input_file.reader.pages)
         return total_steps
     
+    def poster(self):
+        """
+        convert to poster e.g. from an input document with
+        A3 page convert to two A4 pages per page
+        """
+        writer=PdfWriter()
+        reader=self.input_file.reader
+        for page_num in range(len(reader.pages)):
+            page = reader.pages[page_num]
+            # Dimensions of A3 page are double that of an A4 page
+            # Assuming that the page size is in points (1 point = 1/72 inch)
+            a3_width = page.mediabox.upper_right[0]
+            a3_height = page.mediabox.upper_right[1]
+            
+            # Create two A4 pages from the A3 page
+            a4_page_1 = PageObject.create_blank_page(width=a3_width, height=a3_height / 2)
+            a4_page_2 = PageObject.create_blank_page(width=a3_width, height=a3_height / 2)
+            
+            # Set the content of the A4 pages to the corresponding halves of the A3 page
+            a4_page_1.merge_translated_page(page, 0, a3_height / 2)
+            a4_page_2.merge_page(page)
+            
+            # Add the A4 pages to the writer object
+            writer.add_page(a4_page_1)
+            writer.add_page(a4_page_2)
+        with open(self.output_file.filename, "wb") as output_file:
+            writer.write(output_file)
+            
+        self.input_file.close()
+        return writer
+    
     def split_booklet_style(self,progress_bar:Progressbar=None) -> None:
         """
         Split a booklet-style PDF into individual pages.

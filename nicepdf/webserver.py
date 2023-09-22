@@ -74,6 +74,12 @@ class WebServer(InputWebserver):
             await result_coro()
             await self.render()
             
+    async def poster(self):
+        self.poster_path=self.input.replace(".pdf",f"-poster.pdf")
+        pdftool=PDFTool(self.input_source,self.poster_path,debug=self.debug)
+        pdftool.poster()
+        self.show_pdf(self.pdf_split_view, self.poster_path)
+            
     def show_pdf(self,view,file_path):
         """
         show the given pdf in the given ui.html view
@@ -116,6 +122,7 @@ class WebServer(InputWebserver):
                          value=self.input,
                          on_change=self.input_changed).props("size=100")
                     self.tool_button(tooltip="reload",icon="refresh",handler=self.reload_file)    
+                    self.tool_button(tooltip="poster",icon="insert_page_break",handler=self.poster)
                     self.tool_button(tooltip="un-booklet",icon="import_contacts",handler=self.unbooklet)    
                     if self.is_local:
                         self.tool_button(tooltip="open",icon="file_open",handler=self.open_file)    
