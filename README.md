@@ -9,6 +9,8 @@ online PDF display and manipulation tool
 [![GitHub closed issues](https://img.shields.io/github/issues-closed/WolfgangFahl/nicepdf.svg)](https://github.com/WolfgangFahl/nicepdf/issues/?q=is%3Aissue+is%3Aclosed)
 [![License](https://img.shields.io/github/license/WolfgangFahl/nicepdf.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-
 ## Docs and Tutorials
 [Wiki](https://wiki.bitplan.com/index.php/nicepdf)
+
+## Demo
+[nicepdf demo](http://nicepdf.bitplan.com)
