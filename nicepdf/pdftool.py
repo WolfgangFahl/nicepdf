@@ -181,7 +181,7 @@ class DoublePage:
         return left_num, right_num
 
     @classmethod
-    def from_page(cls, page, index, total_pages,from_binder:bool=False,debug:bool=False):
+    def from_page(cls, page, index, total_pages,from_binder:bool=False,debug_path:str=None):
         # Get the rotation of the original page
         rotation = page.get('/Rotate', 0)
         width = page.mediabox.width
@@ -190,9 +190,8 @@ class DoublePage:
         if height>width and rotation==0:
             print(f"Rotation missing for page {index}") 
         rotated_page = cls.copy_page(page=page,width=a4_width, height=a4_height,tx=0,ty=0)
-        if debug:
-            file_path=f"/tmp/debug-{index}.pdf"
-            cls.save_page(rotated_page, file_path)
+        if debug_path:
+            cls.save_page(rotated_page, debug_path)
         
         # Create two new blank pages with half the width of the original
     
@@ -280,7 +279,14 @@ class PdfFile:
         
         for i in range(double_page_count):
             page = self.reader.pages[i]
-            double_page = DoublePage.from_page(page, i, double_page_count * 2,from_binder=from_binder,debug=debug)
+            if debug:
+                # Extract the base filename without extension
+                base_filename = os.path.basename(self.filename)
+                base_filename_without_ext = os.path.splitext(base_filename)[0]
+                
+                # Create the debug path
+                debug_path = f"/tmp/{base_filename_without_ext}_{i}_debug.pdf"
+            double_page = DoublePage.from_page(page, i, double_page_count * 2,from_binder=from_binder,debug_path=debug_path)
             self.double_pages.append(double_page)
             if progress_bar:
                 # Update the progress bar

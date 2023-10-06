@@ -47,7 +47,9 @@ class TestPDFTool(Basetest):
         """
         # Creating an instance of the PDFTool class
         output_path=pdf_file.filename.replace(".pdf","_out.pdf")
-        pdf_tool = PDFTool(pdf_file.filename, output_path, debug=self.debug)
+        debug=self.debug
+        debug=True
+        pdf_tool = PDFTool(pdf_file.filename, output_path, debug=debug)
 
         # Running the split function
         pdf_tool.split_booklet_style()
