@@ -277,6 +277,7 @@ class PdfFile:
             # Change the description of the progress bar
             progress_bar.set_description("Splitting pages")
         
+        debug_path=None
         for i in range(double_page_count):
             page = self.reader.pages[i]
             if debug:
