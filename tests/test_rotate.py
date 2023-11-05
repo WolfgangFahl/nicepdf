@@ -8,7 +8,7 @@ import copy
 
 from pypdf import PdfReader, PdfWriter
 from nicepdf.pdftool import PdfFile
-from basetest import Basetest
+from ngwidgets.basetest import Basetest
 from pathlib import Path
 from nicepdf.pdftool import DoublePage
 from reportlab.pdfgen import canvas

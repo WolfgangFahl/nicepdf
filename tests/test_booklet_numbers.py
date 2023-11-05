@@ -4,7 +4,7 @@ Created on 12.09.2023
 @author: wf
 '''
 from nicepdf.pdftool import DoublePage
-from basetest import Basetest
+from ngwidgets.basetest import Basetest
 
 class TestBookletPageNumbers(Basetest):
     """
