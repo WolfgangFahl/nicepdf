@@ -3,7 +3,7 @@ Created on 2023-09-12
 
 @author: wf
 '''
-from tests.basetest import Basetest
+from basetest import Basetest
 from nicepdf.version import Version
 import json
 import dataclasses

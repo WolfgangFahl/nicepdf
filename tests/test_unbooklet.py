@@ -7,7 +7,7 @@ import os
 import sys
 from pypdf import PdfReader
 from nicepdf.pdftool import PDFTool,PdfFile
-from tests.basetest import Basetest
+from basetest import Basetest
 import webbrowser
 
 class TestPDFTool(Basetest):
