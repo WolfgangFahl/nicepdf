@@ -1,9 +1,9 @@
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+[project]
 description = "nicegui based PDF manipulation tool - e.g. booklet conversion"
 keywords = ["nicegui", "pdf"]
-[project]
 name = "nicepdf"
 authors = [
   {name = "Wolfgang Fahl", email = "wf@bitplan.com"}
