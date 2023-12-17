@@ -1,7 +1,8 @@
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
+description = "nicegui based PDF manipulation tool - e.g. booklet conversion"
+keywords = ["nicegui", "pdf"]
 [project]
 name = "nicepdf"
 authors = [
@@ -34,7 +35,7 @@ classifiers=[
     "Intended Audience :: Education",
     "License :: OSI Approved :: Apache Software License"
 ]
-dynamic = ["version", "description"]
+dynamic = ["version"]
 
 [tool.hatch.version]
 path = "nicepdf/__init__.py"
