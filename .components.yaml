@@ -1,0 +1,8 @@
+# Components
+# WF 2023-12-17
+components:
+- name: pdftool.py
+  source: /nicepdf/pdftool.py
+  issue: 3
+  demo_url: http://nicepdf.bitplan.com/
+  demo_image_url: https://github.com/WolfgangFahl/nicepdf/assets/1336221/a13db5d4-5380-4fbc-89db-20b7638310c1
