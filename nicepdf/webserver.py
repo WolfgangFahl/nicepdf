@@ -121,11 +121,12 @@ class WebServer(InputWebserver):
                     self.input_input=ui.input(
                          value=self.input,
                          on_change=self.input_changed).props("size=100")
-                    self.tool_button(tooltip="reload",icon="refresh",handler=self.reload_file)    
-                    self.tool_button(tooltip="poster",icon="insert_page_break",handler=self.poster)
-                    self.tool_button(tooltip="un-booklet",icon="import_contacts",handler=self.unbooklet)    
-                    if self.is_local:
-                        self.tool_button(tooltip="open",icon="file_open",handler=self.open_file)    
+                    with ui.row():     
+                        self.tool_button(tooltip="reload",icon="refresh",handler=self.reload_file)    
+                        self.tool_button(tooltip="poster",icon="insert_page_break",handler=self.poster)
+                        self.tool_button(tooltip="un-booklet",icon="import_contacts",handler=self.unbooklet)    
+                        if self.is_local:
+                            self.tool_button(tooltip="open",icon="file_open",handler=self.open_file)    
                 with splitter.after:
                     self.pdf_desc=ui.html("")
             slider_props='label-always'
