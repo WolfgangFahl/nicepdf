@@ -14,7 +14,7 @@ class Version:
     name = "nicepdf"
     version = nicepdf.__version__
     date = '2023-09-07'
-    updated = '2023-12-17'
+    updated = '2023-12-25'
     description = 'PDF manipulation tool - e.g. booklet conversion'
     
     authors = 'Wolfgang Fahl'

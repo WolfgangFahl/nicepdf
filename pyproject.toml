@@ -14,7 +14,7 @@ maintainers = [
 readme = "README.md"
 license= "Apache-2.0"
 dependencies = [
-    "PyPDF>=3.16.0",
+    "PyPDF>=3.17.4",
     "tqdm>=4.60.0",
     "reportlab>=3.5.67",
     "nicegui",

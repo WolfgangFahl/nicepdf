@@ -121,21 +121,37 @@ class DoublePage:
         with open(file_path, "wb") as output_file:
             writer.write(output_file)
 
-    @classmethod 
-    def copy_page(cls,page,width,height,tx,ty):
+    @classmethod
+    def copy_page(cls, page: PageObject, width: float, height: float, tx: float=0, ty: float=0) -> PageObject:
         """
-        get a copy of the given page 
+        Create a copy of the given page, applying rotation and translation adjustments if needed.
+
+        This method adjusts the original page's rotation and position, then merges it onto a new blank page of specified dimensions.
+
+        Args:
+            cls: The class reference used for class methods.
+            page: The original page object to be copied and transformed.
+            width: The width of the new page.
+            height: The height of the new page.
+            tx: The horizontal translation applied to the original page.
+            ty: The vertical translation applied to the original page.
+
+        Returns:
+            A new PageObject with the original page's content, adjusted for rotation and translation.
+
+        Note:
+            Rotation is extracted from the page's '/Rotate' property and is applied relative to the page center.
+            The method applies a negative rotation to compensate for the original page's rotation.
         """
+        # Create a copy of the original page
         new_page = PageObject.create_blank_page(pdf=None, width=width, height=height)
         # Get the rotation of the original page
-        rotation = page.get('/Rotate', 0)
         rotated_page=copy(page)
-        if rotation!=0:
-            rotated_page.rotate(-rotation)
-        pass
-        rotated_page.add_transformation(Transformation().translate(tx, ty))
-        # doesn't work as expected
+        # see https://github.com/py-pdf/pypdf/issues/2340
+        rotated_page.transfer_rotation_to_content()
+        rotated_page.add_transformation(Transformation().rotate(0).translate(tx=tx, ty=ty))
         new_page.merge_page(rotated_page)
+
         return new_page
     
     @classmethod
@@ -190,16 +206,28 @@ class DoublePage:
         if height>width and rotation==0:
             print(f"Rotation missing for page {index}") 
         rotated_page = cls.copy_page(page=page,width=a4_width, height=a4_height,tx=0,ty=0)
-        if debug_path:
-            cls.save_page(rotated_page, debug_path)
         
         # Create two new blank pages with half the width of the original
     
-        left_half = cls.copy_page(page=rotated_page,width=a4_width/2, height=a4_height,tx=0,ty=0)
+        left_half  = cls.copy_page(page=rotated_page,width=a4_width/2, height=a4_height,tx=0,ty=0)
         right_half = cls.copy_page(page=rotated_page,width=a4_width/2, height=a4_height,tx=-a4_width/2, ty=0)
+        
+        # Adjusted translation for left half (no shift needed as it's the starting half)
+        left_half_llm  = cls.copy_page(page=rotated_page, width=a4_width/2, height=a4_height, tx=0, ty=0)
+
+        # Adjusted translation for right half (shift to the left by half of the original page's width)
+        right_half_llm = cls.copy_page(page=rotated_page, width=a4_width/2, height=a4_height)
+        right_half_llm.add_transformation(Transformation().rotate(0).translate(tx=-a4_width/2, ty=0))
+        if debug_path:
+            cls.save_page(rotated_page, debug_path)
+            cls.save_page(left_half,debug_path.replace(".pdf","-left.pdf"))
+            cls.save_page(right_half,debug_path.replace(".pdf","-right.pdf"))
+            cls.save_page(right_half_llm,debug_path.replace(".pdf","-right-llm.pdf"))
     
         # Calculate booklet page numbers
         left_num, right_num = cls.calculate_booklet_page_numbers(index, total_pages, from_binder)
+        if debug_path:
+            print(f"{index:3}:{left_num:3}-{right_num:3} {rotation:3}")
     
         # Create HalfPage instances for each half
         left = HalfPage(page_num=left_num, page=left_half)
@@ -267,9 +295,15 @@ class PdfFile:
         if self.file_obj:
             self.file_obj.close()
 
-    def read_booklet(self,from_binder:bool=False,progress_bar=None,debug:bool=False):
+    def read_booklet(self, from_binder: bool = False, progress_bar = None, debug: bool = False) -> None:
         """
-        read min input as a booklet
+        Reads minimum input as a booklet.
+
+        Args:
+            from_binder (bool): Indicates whether the booklet was scanned from a binder. Defaults to False - outer cover page scanned first.
+            progress_bar (Optional[ProgressBar]): Tracks the reading progress of the booklet. Replace 'TypeOfProgressBar' with the actual type you're using for the progress bar.
+            debug (bool): If True, the method will run in debug mode providing additional logging information. Defaults to False.
+
         """
         self.double_pages = []
         double_page_count = len(self.reader.pages)
