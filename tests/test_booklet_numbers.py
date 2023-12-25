@@ -1,10 +1,12 @@
-'''
+"""
 Created on 12.09.2023
 
 @author: wf
-'''
-from nicepdf.pdftool import DoublePage
+"""
 from ngwidgets.basetest import Basetest
+
+from nicepdf.pdftool import DoublePage
+
 
 class TestBookletPageNumbers(Basetest):
     """
@@ -24,7 +26,7 @@ class TestBookletPageNumbers(Basetest):
             (4, True, (46, 55)),
             (1, True, (52, 49)),
             (3, True, (54, 47)),
-            (5, True, (56, 45))
+            (5, True, (56, 45)),
         ],
         8: [
             (0, False, (8, 1)),
@@ -34,8 +36,8 @@ class TestBookletPageNumbers(Basetest):
             (0, True, (4, 5)),
             (2, True, (2, 7)),
             (1, True, (6, 3)),
-            (3, True, (8, 1))
-        ]
+            (3, True, (8, 1)),
+        ],
     }
 
     def test_booklet_page_numbers(self):
@@ -44,7 +46,11 @@ class TestBookletPageNumbers(Basetest):
         """
         for total_pages, tests in self.test_data.items():
             for index, from_binder, expected in tests:
-                with self.subTest(total_pages=total_pages, index=index, from_binder=from_binder):
-                    result = DoublePage.calculate_booklet_page_numbers(index, total_pages, from_binder)
-                    msg=f"Testing total pages:{total_pages} index: {index} from_binder: {from_binder}"
-                    self.assertEqual(result, expected,msg)
+                with self.subTest(
+                    total_pages=total_pages, index=index, from_binder=from_binder
+                ):
+                    result = DoublePage.calculate_booklet_page_numbers(
+                        index, total_pages, from_binder
+                    )
+                    msg = f"Testing total pages:{total_pages} index: {index} from_binder: {from_binder}"
+                    self.assertEqual(result, expected, msg)
