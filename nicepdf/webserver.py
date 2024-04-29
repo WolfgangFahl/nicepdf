@@ -5,48 +5,40 @@ Created on 2023-09-09
 """
 import os
 
-from ngwidgets.background import BackgroundTaskHandler
 from ngwidgets.file_selector import FileSelector
-from ngwidgets.input_webserver import InputWebserver
+from ngwidgets.input_webserver import InputWebserver, InputWebSolution
 from ngwidgets.progress import NiceguiProgressbar
 from ngwidgets.webserver import WebserverConfig
-from nicegui import Client, app, ui
+from nicegui import Client, app, ui, run
 
 from nicepdf.pdftool import PDFTool
 from nicepdf.version import Version
 
 
-class WebServer(InputWebserver):
+class NicePdfWebServer(InputWebserver):
     """
-    WebServer class that manages the server
+    WebServer for NicePdf
 
     """
 
     @classmethod
     def get_config(cls) -> WebserverConfig:
-        copy_right = "(c)2023 Wolfgang Fahl"
+        copy_right = "(c)2023-2024 Wolfgang Fahl"
         config = WebserverConfig(
-            copy_right=copy_right, version=Version(), default_port=9861
+            copy_right=copy_right, 
+            version=Version(), 
+            short_name="nicepdf",
+            default_port=9861
         )
-        return config
+        server_config = WebserverConfig.get(config)
+        server_config.solution_class = NicePdfSolution
+        return server_config
+        
 
     def __init__(self):
         """Constructs all the necessary attributes for the WebServer object."""
-        InputWebserver.__init__(self, config=WebServer.get_config())
-        self.input_source = None
-        self.output_path = None
-        self.bth = BackgroundTaskHandler()
-        app.on_shutdown(self.bth.cleanup())
-        self.future = None
-
-        @ui.page("/")
-        async def home(client: Client):
-            return await self.home(client)
-
-        @ui.page("/settings")
-        async def settings():
-            return await self.settings()
-
+        InputWebserver.__init__(self, config=NicePdfWebServer.get_config())
+ 
     @classmethod
     def examples_path(cls) -> str:
         # the root directory (default: examples)
@@ -54,6 +46,39 @@ class WebServer(InputWebserver):
         path = os.path.abspath(path)
         return path
 
+    def configure_run(self):
+        self.from_binder = self.args.from_binder
+        self.allowed_urls = [self.examples_path(), self.root_path]
+
+class NicePdfSolution(InputWebSolution):
+    """
+    NicePdf Solution
+    """
+
+    def __init__(self, webserver: "NicePdfWebserver", client: Client):
+        """
+        Initialize the NiceGuiWidgetsDemoContext.
+
+        Calls the constructor of the base class ClientWebContext to ensure proper initialization
+        and then performs any additional setup specific to NiceGuiWidgetsDemoContext.
+
+        Args:
+            webserver (NiceGuiWebserver): The webserver instance associated with this context.
+            client (Client): The client instance this context is associated with.
+        """
+        super().__init__(webserver, client)  # Call to the superclass constructor
+        self.input_source = None
+        self.output_path = None
+        
+        
+    def configure_settings(self):
+        """
+        add additional settings
+        """
+        ui.checkbox("from binder", value=self.from_binder).bind_value(
+            self, "from_binder"
+        )
+        
     def on_page_change(self, page_num: int):
         """
         switch to the given page
@@ -75,13 +100,13 @@ class WebServer(InputWebserver):
                 self.future.cancel()
             self.progressbar.total = pdftool.get_total_steps()
             self.progressbar.reset()
-            self.future, result_coro = self.bth.execute_in_background(
-                pdftool.split_booklet_style, progress_bar=self.progressbar
-            )
-            await result_coro()
+            await run.io_bound(pdftool.split_booklet_style,self.progress_bar)
             await self.render()
 
     async def poster(self):
+        """
+        create a poster
+        """
         self.poster_path = self.input.replace(".pdf", f"-poster.pdf")
         pdftool = PDFTool(self.input_source, self.poster_path, debug=self.debug)
         pdftool.poster()
@@ -114,7 +139,7 @@ class WebServer(InputWebserver):
             self.show_pdf(self.pdf_split_view, self.output_path)
 
         except BaseException as ex:
-            self.handle_exception(ex, self.do_trace)
+            self.solution.handle_exception(ex)
 
     async def home(self, _client: Client):
         """
@@ -176,15 +201,3 @@ class WebServer(InputWebserver):
                     )
 
         await self.setup_content_div(show)
-
-    def configure_settings(self):
-        """
-        add additional settings
-        """
-        ui.checkbox("from binder", value=self.from_binder).bind_value(
-            self, "from_binder"
-        )
-
-    def configure_run(self):
-        self.from_binder = self.args.from_binder
-        self.allowed_urls = [self.examples_path(), self.root_path]

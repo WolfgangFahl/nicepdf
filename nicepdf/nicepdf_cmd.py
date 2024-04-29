@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from ngwidgets.cmd import WebserverCmd
 
 from nicepdf.pdftool import PDFTool
-from nicepdf.webserver import WebServer
+from nicepdf.webserver import NicePdfWebServer
 
 
 class NicePdfCmd(WebserverCmd):
@@ -16,8 +16,8 @@ class NicePdfCmd(WebserverCmd):
         """
         constructor
         """
-        config = WebServer.get_config()
-        WebserverCmd.__init__(self, config, WebServer, DEBUG)
+        config = NicePdfWebServer.get_config()
+        WebserverCmd.__init__(self, config, NicePdfWebServer, DEBUG)
         pass
 
     def getArgParser(self, description: str, version_msg) -> ArgumentParser:
@@ -37,7 +37,7 @@ class NicePdfCmd(WebserverCmd):
         parser.add_argument(
             "-rp",
             "--root_path",
-            default=WebServer.examples_path(),
+            default=NicePdfWebServer.examples_path(),
             help="path to pdf files [default: %(default)s]",
         )
         parser.add_argument(
