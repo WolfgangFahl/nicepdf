@@ -3,13 +3,14 @@ Created on 2023-09-09
 
 @author: wf
 """
+
 import os
 
 from ngwidgets.file_selector import FileSelector
 from ngwidgets.input_webserver import InputWebserver, InputWebSolution
 from ngwidgets.progress import NiceguiProgressbar
 from ngwidgets.webserver import WebserverConfig
-from nicegui import Client, app, ui, run
+from nicegui import Client, app, run, ui
 
 from nicepdf.pdftool import PDFTool
 from nicepdf.version import Version
@@ -25,20 +26,19 @@ class NicePdfWebServer(InputWebserver):
     def get_config(cls) -> WebserverConfig:
         copy_right = "(c)2023-2024 Wolfgang Fahl"
         config = WebserverConfig(
-            copy_right=copy_right, 
-            version=Version(), 
+            copy_right=copy_right,
+            version=Version(),
             short_name="nicepdf",
-            default_port=9861
+            default_port=9861,
         )
         server_config = WebserverConfig.get(config)
         server_config.solution_class = NicePdfSolution
         return server_config
-        
 
     def __init__(self):
         """Constructs all the necessary attributes for the WebServer object."""
         InputWebserver.__init__(self, config=NicePdfWebServer.get_config())
- 
+
     @classmethod
     def examples_path(cls) -> str:
         # the root directory (default: examples)
@@ -50,6 +50,7 @@ class NicePdfWebServer(InputWebserver):
         super(NicePdfWebServer, self).configure_run()
         self.from_binder = self.args.from_binder
         self.allowed_urls = [self.examples_path(), self.root_path]
+
 
 class NicePdfSolution(InputWebSolution):
     """
@@ -67,10 +68,9 @@ class NicePdfSolution(InputWebSolution):
         super().__init__(webserver, client)  # Call to the superclass constructor
         self.input_source = None
         self.output_path = None
-        self.allowed_urls=self.webserver.allowed_urls
-        self.from_binder=self.webserver.from_binder
-        
-        
+        self.allowed_urls = self.webserver.allowed_urls
+        self.from_binder = self.webserver.from_binder
+
     def configure_settings(self):
         """
         add additional settings
@@ -78,7 +78,7 @@ class NicePdfSolution(InputWebSolution):
         ui.checkbox("from binder", value=self.from_binder).bind_value(
             self, "from_binder"
         )
-        
+
     def on_page_change(self, page_num: int):
         """
         switch to the given page
@@ -98,7 +98,7 @@ class NicePdfSolution(InputWebSolution):
             pdftool.from_binder = self.from_binder
             self.progressbar.total = pdftool.get_total_steps()
             self.progressbar.reset()
-            await run.io_bound(pdftool.split_booklet_style,self.progressbar)
+            await run.io_bound(pdftool.split_booklet_style, self.progressbar)
             await self.render()
 
     async def poster(self):

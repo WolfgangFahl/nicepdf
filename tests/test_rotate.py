@@ -3,6 +3,7 @@ Created on 15.09.2023
 
 @author: wf
 """
+
 # https://github.com/py-pdf/pypdf/issues/451
 import copy
 from io import BytesIO

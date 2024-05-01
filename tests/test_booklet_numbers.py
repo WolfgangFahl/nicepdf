@@ -3,6 +3,7 @@ Created on 12.09.2023
 
 @author: wf
 """
+
 from ngwidgets.basetest import Basetest
 
 from nicepdf.pdftool import DoublePage
