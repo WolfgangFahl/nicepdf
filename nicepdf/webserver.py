@@ -47,6 +47,7 @@ class NicePdfWebServer(InputWebserver):
         return path
 
     def configure_run(self):
+        super(NicePdfWebServer, self).configure_run()
         self.from_binder = self.args.from_binder
         self.allowed_urls = [self.examples_path(), self.root_path]
 
@@ -55,20 +56,19 @@ class NicePdfSolution(InputWebSolution):
     NicePdf Solution
     """
 
-    def __init__(self, webserver: "NicePdfWebserver", client: Client):
+    def __init__(self, webserver: NicePdfWebServer, client: Client):
         """
-        Initialize the NiceGuiWidgetsDemoContext.
-
-        Calls the constructor of the base class ClientWebContext to ensure proper initialization
-        and then performs any additional setup specific to NiceGuiWidgetsDemoContext.
+        Initialize the NicePdfSolution.
 
         Args:
-            webserver (NiceGuiWebserver): The webserver instance associated with this context.
+            webserver (NicePdfWebserver): The webserver instance associated with this context.
             client (Client): The client instance this context is associated with.
         """
         super().__init__(webserver, client)  # Call to the superclass constructor
         self.input_source = None
         self.output_path = None
+        self.allowed_urls=self.webserver.allowed_urls
+        self.from_binder=self.webserver.from_binder
         
         
     def configure_settings(self):
@@ -96,11 +96,9 @@ class NicePdfSolution(InputWebSolution):
         if self.input_source:
             pdftool = PDFTool(self.input_source, self.output_path, debug=self.debug)
             pdftool.from_binder = self.from_binder
-            if self.future:
-                self.future.cancel()
             self.progressbar.total = pdftool.get_total_steps()
             self.progressbar.reset()
-            await run.io_bound(pdftool.split_booklet_style,self.progress_bar)
+            await run.io_bound(pdftool.split_booklet_style,self.progressbar)
             await self.render()
 
     async def poster(self):
@@ -141,7 +139,7 @@ class NicePdfSolution(InputWebSolution):
         except BaseException as ex:
             self.solution.handle_exception(ex)
 
-    async def home(self, _client: Client):
+    async def home(self):
         """
         Generates the home page with a pdf view
         """
