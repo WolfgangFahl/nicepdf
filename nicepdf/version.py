@@ -18,8 +18,8 @@ class Version:
     name = "nicepdf"
     version = nicepdf.__version__
     date = "2023-09-07"
-    updated = "2024-05-01"
-    description = "PDF manipulation tool - e.g. booklet conversion"
+    updated = "2024-05-21"
+    description = "PDF manipulation tool - e.g. booklet conversion/posterizing"
 
     authors = "Wolfgang Fahl"
 

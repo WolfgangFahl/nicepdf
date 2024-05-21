@@ -532,6 +532,19 @@ class PDFTool:
         self.args = None
         self.verbose = False
         self.from_binder = False
+        self.page_sizes=PDFTool.get_pagesizes()
+        
+    @classmethod
+    def get_pagesizes(cls):
+        # Define the page sizes in points (1 point = 1/72 inch)
+        page_sizes = {
+            'A0': pagesizes.A0,
+            'A1': pagesizes.A1,
+            'A2': pagesizes.A2,
+            'A3': pagesizes.A3,
+            'A4': pagesizes.A4
+        }
+        return page_sizes
 
     def get_total_steps(self) -> int:
         """
@@ -546,40 +559,78 @@ class PDFTool:
         total_steps = 3 * len(self.input_file.reader.pages)
         return total_steps
 
-    def poster(self):
+    def poster(self, source_format: str = "A4", target_format: str = "A3", progress_bar: Progressbar = None) -> PdfWriter:
         """
-        convert to poster e.g. from an input document with
-        A3 page convert to two A4 pages per page
+        Convert to poster by scaling up pages from a smaller format to a larger format.
+        
+        Args:
+            source_format (str): The source page format (e.g., 'A4', 'A3', 'A2'). Default is 'A4'.
+            target_format (str): The target page format (e.g., 'A3', 'A2', 'A1', 'A0'). Default is 'A3'.
+            progress_bar (Progressbar): Progress bar to track progress.
+
+        Returns:
+            PdfWriter: The PDF writer object with the transformed pages.
         """
+        if source_format not in self.page_sizes or target_format not in self.page_sizes:
+            raise ValueError("Unsupported source or target format. Supported formats are: A0, A1, A2, A3, A4.")
+        
+        source_width, source_height = self.page_sizes[source_format]
+        target_width, target_height = self.page_sizes[target_format]
+        
+        if source_width >= target_width or source_height >= target_height:
+            raise ValueError("Source format must be smaller than target format.")
+        
         writer = PdfWriter()
         reader = self.input_file.reader
+        
+        horizontal_splits = math.ceil(target_width / source_width) - 1
+        vertical_splits = math.ceil(target_height / source_height) - 1
+
+        total_steps = len(reader.pages) * horizontal_splits * vertical_splits
+        
+        if progress_bar is not None:
+            progress_bar.total = total_steps
+            progress_bar.reset()
+        
         for page_num in range(len(reader.pages)):
             page = reader.pages[page_num]
-            # Dimensions of A3 page are double that of an A4 page
-            # Assuming that the page size is in points (1 point = 1/72 inch)
-            a3_width = page.mediabox.upper_right[0]
-            a3_height = page.mediabox.upper_right[1]
-
-            # Create two A4 pages from the A3 page
-            a4_page_1 = PageObject.create_blank_page(
-                width=a3_width, height=a3_height / 2
-            )
-            a4_page_2 = PageObject.create_blank_page(
-                width=a3_width, height=a3_height / 2
-            )
-
-            # Set the content of the A4 pages to the corresponding halves of the A3 page
-            a4_page_1.merge_translated_page(page, 0, a3_height / 2)
-            a4_page_2.merge_page(page)
-
-            # Add the A4 pages to the writer object
-            writer.add_page(a4_page_1)
-            writer.add_page(a4_page_2)
+            self.split_and_scale_page(writer, page, source_width, source_height, target_width, target_height, horizontal_splits, vertical_splits, progress_bar)
+        
         with open(self.output_file.filename, "wb") as output_file:
             writer.write(output_file)
 
         self.input_file.close()
         return writer
+
+    def split_and_scale_page(self, writer: PdfWriter, page: PageObject, source_width: float, source_height: float, target_width: float, target_height: float, horizontal_splits: int, vertical_splits: int, progress_bar: Progressbar = None) -> None:
+        """
+        Split a single page and scale it up to the target format.
+
+        Args:
+            writer (PdfWriter): The PDF writer object.
+            page (PageObject): The page to be split and scaled.
+            source_width (float): The width of the source format.
+            source_height (float): The height of the source format.
+            target_width (float): The width of the target format.
+            target_height (float): The height of the target format.
+            horizontal_splits (int): The number of horizontal splits.
+            vertical_splits (int): The number of vertical splits.
+            progress_bar (Progressbar): Progress bar to track progress.
+        """
+        for row in range(vertical_splits):
+            for col in range(horizontal_splits):
+                new_page = PageObject.create_blank_page(width=source_width, height=source_height)
+                lower_left_x = col * source_width
+                lower_left_y = target_height - (row + 1) * source_height
+                new_page.merge_translated_page(page, -lower_left_x, -lower_left_y)
+                
+                scaled_page = PageObject.create_blank_page(width=target_width, height=target_height)
+                scaled_page.merge_transformed_page(new_page, Transformation().scale(target_width / source_width, target_height / source_height))
+                
+                writer.add_page(scaled_page)
+
+                if progress_bar is not None:
+                    progress_bar.update(1)
 
     def split_booklet_style(self, progress_bar: Progressbar = None) -> None:
         """

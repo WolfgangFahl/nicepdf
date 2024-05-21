@@ -86,7 +86,9 @@ class NicePdfSolution(InputWebSolution):
         pass
 
     def update_progress(self):
-        """ """
+        """
+        update the progress bar 
+        """
         self.progressbar.update(1)
 
     async def unbooklet(self):
@@ -103,12 +105,20 @@ class NicePdfSolution(InputWebSolution):
 
     async def poster(self):
         """
-        create a poster
+        Create a poster.
         """
-        self.poster_path = self.input.replace(".pdf", f"-poster.pdf")
-        pdftool = PDFTool(self.input_source, self.poster_path, debug=self.debug)
-        pdftool.poster()
-        self.show_pdf(self.pdf_split_view, self.poster_path)
+        try:
+            self.poster_path = self.input.replace(".pdf", f"-poster.pdf")
+            pdftool = PDFTool(self.input_source, self.poster_path, debug=self.debug)
+            
+            self.progressbar.total = len(pdftool.input_file.reader.pages)
+            self.progressbar.reset()
+
+            await run.io_bound(pdftool.poster, self.source_format_select.value, self.target_format_select.value, self.progressbar)
+            
+            self.show_pdf(self.pdf_split_view, self.poster_path)
+        except Exception as ex:
+            self.handle_exception(ex)
 
     def show_pdf(self, view, file_path):
         """
@@ -167,6 +177,9 @@ class NicePdfSolution(InputWebSolution):
                             icon="insert_page_break",
                             handler=self.poster,
                         )
+                        page_size_options=list(PDFTool.get_pagesizes().keys())
+                        self.source_format_select=self.add_select("from",page_size_options,value="A4")
+                        self.target_format_select=self.add_select("to",page_size_options,value="A3")
                         self.tool_button(
                             tooltip="un-booklet",
                             icon="import_contacts",
