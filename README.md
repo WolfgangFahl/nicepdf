@@ -1,3 +1,4 @@
+moved to https://codeberg.org/WolfgangFahl/nicepdf
 # nicepdf
 online PDF display and manipulation tool
 
