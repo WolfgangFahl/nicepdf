@@ -81,8 +81,8 @@ class TestPDFTool(Basetest):
                     print(double_page.right.page_num)
             for i, double_page in enumerate(double_pages):
                 if 2 * i + 1 < len(expected):
-                    self.assertEquals(expected[2 * i], double_page.left.page_num)
-                    self.assertEquals(expected[2 * i + 1], double_page.right.page_num)
+                    self.assertEqual(expected[2 * i], double_page.left.page_num)
+                    self.assertEqual(expected[2 * i + 1], double_page.right.page_num)
 
     def test_read_booklet(self):
         """
@@ -93,8 +93,8 @@ class TestPDFTool(Basetest):
 
         expected_indices = [4, 1, 2, 3]
         for idx, double_page in enumerate(pdf_file.double_pages):
-            self.assertEquals(expected_indices[idx * 2], double_page.left.page_num)
-            self.assertEquals(expected_indices[idx * 2 + 1], double_page.right.page_num)
+            self.assertEqual(expected_indices[idx * 2], double_page.left.page_num)
+            self.assertEqual(expected_indices[idx * 2 + 1], double_page.right.page_num)
 
     def test_split_booklet_style(self):
         """
